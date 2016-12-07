@@ -3,6 +3,10 @@ using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using System;
+using System.Diagnostics;
+using System.IO;
+using System.Net;
+using System.Text;
 
 namespace SampleServer
 {
@@ -19,6 +23,8 @@ namespace SampleServer
 
 		private TimeSpan _currentTime = TimeSpan.Zero;
 
+		private SpriteFont _font;
+
 		public SampleServer()
 		{
 			_graphics = new GraphicsDeviceManager( this );
@@ -27,16 +33,27 @@ namespace SampleServer
 
 		protected override void Initialize()
 		{
-			_server = new AgnServer( 30000 );
+			_server = new AgnServer( 0x0bad, 30000 );
+			_server.DataReceive += OnDataReceived;
 
 			base.Initialize();
+		}
+
+		private void OnDataReceived( BinaryReader reader, IPEndPoint remote )
+		{
+			reader.ReadDouble();
+
+			var data = new MemoryStream();
+			var writer = new BinaryWriter( data );
+			writer.Write( DateTime.Now.Second );
+
+			_server.SendTo( data.GetBuffer(), (int)data.Length, remote );
 		}
 
 		protected override void LoadContent()
 		{
 			_spriteBatch = new SpriteBatch( GraphicsDevice );
-
-
+			_font = this.Content.Load<SpriteFont>( "Arial" );
 		}
 
 		protected override void UnloadContent()
@@ -47,13 +64,8 @@ namespace SampleServer
 		{
 			if( GamePad.GetState( PlayerIndex.One ).Buttons.Back == ButtonState.Pressed || Keyboard.GetState().IsKeyDown( Keys.Escape ) )
 				Exit();
-
-			_currentTime += gameTime.ElapsedGameTime;
-			if( _currentTime.TotalSeconds > 0.03 )
-			{
-				_currentTime = TimeSpan.Zero;
-				_server.Update( gameTime.ElapsedGameTime );
-			}
+			
+			_server.Update( gameTime.ElapsedGameTime );
 
 			base.Update( gameTime );
 		}
@@ -62,7 +74,13 @@ namespace SampleServer
 		{
 			GraphicsDevice.Clear( Color.CornflowerBlue );
 
+			var sb = new StringBuilder();
+			sb.AppendLine( "Server" );
+			sb.AppendFormat( "Ack: {0}\n", _server.CurrentAck );
 
+			_spriteBatch.Begin();
+			_spriteBatch.DrawString( _font, sb.ToString(), new Vector2( 100.0f, 100.0f ), Color.White );
+			_spriteBatch.End();
 
 			base.Draw( gameTime );
 		}

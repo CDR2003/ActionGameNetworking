@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Threading;
 
 namespace SampleGame
 {
@@ -14,6 +15,7 @@ namespace SampleGame
         [STAThread]
         static void Main()
         {
+			Thread.Sleep( 1000 );
             using (var game = new SampleGame())
                 game.Run();
         }

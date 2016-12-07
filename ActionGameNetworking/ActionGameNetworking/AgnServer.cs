@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Sockets;
@@ -11,19 +12,10 @@ namespace ActionGameNetworking
 {
 	public class AgnServer : AgnNode
 	{
-		public AgnServer( int port )
+		public AgnServer( uint protocolId, int port )
+			: base( protocolId )
 		{
 			this.Socket.Bind( new IPEndPoint( IPAddress.Any, port ) );
-		}
-
-		public override void Update( TimeSpan elapsedTime )
-		{
-			IPEndPoint remote = null;
-			var data = this.ReceiveFrom( ref remote );
-			if( data != null )
-			{
-				Debug.WriteLine( data.Length );
-			}
 		}
 	}
 }

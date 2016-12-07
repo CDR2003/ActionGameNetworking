@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Net.Sockets;
 using System.Text;
@@ -9,13 +10,9 @@ namespace ActionGameNetworking
 {
 	public class AgnClient : AgnNode
 	{
-		public AgnClient()
+		public AgnClient( uint protocolId )
+			: base( protocolId )
 		{
-		}
-
-		public override void Update( TimeSpan elapsedTime )
-		{
-			throw new NotImplementedException();
 		}
 	}
 }

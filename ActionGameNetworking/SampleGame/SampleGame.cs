@@ -3,7 +3,10 @@ using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using System;
+using System.Diagnostics;
 using System.IO;
+using System.Net;
+using System.Text;
 
 namespace SampleGame
 {
@@ -20,6 +23,8 @@ namespace SampleGame
 
 		private TimeSpan _currentTime = TimeSpan.Zero;
 
+		private SpriteFont _font;
+
 		public SampleGame()
 		{
 			_graphics = new GraphicsDeviceManager( this );
@@ -28,16 +33,23 @@ namespace SampleGame
 		
 		protected override void Initialize()
 		{
-			_client = new AgnClient();
+			_client = new AgnClient( 0x0bad );
+			_client.DataReceive += OnDataReceived;
+			_client.LatencySimulation = 0.1f;
+			_client.DropRateSimulation = 0.1f;
 
 			base.Initialize();
 		}
-		
+
+		private void OnDataReceived( BinaryReader reader, IPEndPoint remote )
+		{
+			reader.ReadInt32();
+		}
+
 		protected override void LoadContent()
 		{
 			_spriteBatch = new SpriteBatch( GraphicsDevice );
-
-
+			_font = this.Content.Load<SpriteFont>( "Arial" );
 		}
 		
 		protected override void UnloadContent()
@@ -47,10 +59,22 @@ namespace SampleGame
 		protected override void Update( GameTime gameTime )
 		{
 			if( GamePad.GetState( PlayerIndex.One ).Buttons.Back == ButtonState.Pressed || Keyboard.GetState().IsKeyDown( Keys.Escape ) )
-				Exit();
+			{
+				this.Exit();
+			}
+
+			if( Keyboard.GetState().IsKeyDown( Keys.Enter ) )
+			{
+				_client.LatencySimulation = 0.0f;
+			}
+
+			if( Keyboard.GetState().IsKeyDown( Keys.Space ) )
+			{
+				_client.DropRateSimulation = 0.0f;
+			}
 
 			_currentTime += gameTime.ElapsedGameTime;
-			if( _currentTime.TotalSeconds > 0.016 )
+			if( _currentTime.TotalSeconds > 0.03 )
 			{
 				_currentTime = TimeSpan.Zero;
 
@@ -60,6 +84,8 @@ namespace SampleGame
 				_client.SendTo( data.GetBuffer(), (int)data.Length, "127.0.0.1", 30000 );
 			}
 
+			_client.Update( gameTime.ElapsedGameTime );
+
 			base.Update( gameTime );
 		}
 		
@@ -67,7 +93,17 @@ namespace SampleGame
 		{
 			GraphicsDevice.Clear( Color.CornflowerBlue );
 
+			var sb = new StringBuilder();
+			sb.AppendLine( "Client" );
+			sb.AppendFormat( "Latency Simulation: {0:0}ms\n", _client.LatencySimulation * 1000.0f );
+			sb.AppendFormat( "Drop Rate Simulation: {0:0}%\n", _client.DropRateSimulation * 100.0f );
+			sb.AppendFormat( "Sequence: {0}\n", _client.CurrentSequence );
+			sb.AppendFormat( "RTT: {0:0}ms\n", _client.CurrentRtt * 1000.0f );
+			sb.AppendFormat( "Drop Rate: {0:0}%", _client.CurrentDropRate * 100.0f );
 
+			_spriteBatch.Begin();
+			_spriteBatch.DrawString( _font, sb.ToString(), new Vector2( 100.0f, 100.0f ), Color.White );
+			_spriteBatch.End();
 
 			base.Draw( gameTime );
 		}

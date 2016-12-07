@@ -47,6 +47,7 @@
     <Compile Include="AgnExtensions.cs" />
     <Compile Include="AgnLaggedBuffer.cs" />
     <Compile Include="AgnConnection.cs" />
+    <Compile Include="AgnNode.cs" />
     <Compile Include="AgnPacketHeader.cs" />
     <Compile Include="AgnPacketSendInfo.cs" />
     <Compile Include="AgnServer.cs" />

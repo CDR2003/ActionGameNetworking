@@ -19,13 +19,16 @@ namespace ActionGameNetworking
 
 		internal IPEndPoint Remote;
 
-		internal AgnLaggedBuffer( DateTime sendTime, byte[] buffer, int offset, int size, IPEndPoint remote )
+		internal AgnPacketHeader Header;
+
+		internal AgnLaggedBuffer( DateTime sendTime, byte[] buffer, int offset, int size, IPEndPoint remote, AgnPacketHeader header )
 		{
 			this.SendTime = sendTime;
 			this.Buffer = buffer;
 			this.Offset = offset;
 			this.Size = size;
 			this.Remote = remote;
+			this.Header = header;
 		}
 	}
 }

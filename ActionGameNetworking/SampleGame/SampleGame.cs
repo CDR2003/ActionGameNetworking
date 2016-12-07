@@ -34,14 +34,16 @@ namespace SampleGame
 		protected override void Initialize()
 		{
 			_client = new AgnClient( 0x0bad );
-			_client.DataReceive += OnDataReceived;
+			_client.ServerDataReceive += OnServerDataReceived;
 			_client.LatencySimulation = 0.1f;
 			_client.DropRateSimulation = 0.1f;
+
+			_client.Connect( "192.168.0.104", 30000 );
 
 			base.Initialize();
 		}
 
-		private void OnDataReceived( BinaryReader reader, IPEndPoint remote )
+		private void OnServerDataReceived( BinaryReader reader )
 		{
 			reader.ReadInt32();
 		}
@@ -81,7 +83,7 @@ namespace SampleGame
 				var data = new MemoryStream();
 				var writer = new BinaryWriter( data );
 				writer.Write( gameTime.TotalGameTime.TotalSeconds );
-				_client.SendTo( data.GetBuffer(), (int)data.Length, "127.0.0.1", 30000 );
+				_client.SendTo( data.GetBuffer(), (int)data.Length );
 			}
 
 			_client.Update( gameTime.ElapsedGameTime );

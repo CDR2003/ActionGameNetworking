@@ -11,9 +11,9 @@ using System.Threading.Tasks;
 
 namespace ActionGameNetworking
 {
-	public abstract class AgnConnection : IDisposable
+	public class AgnConnection
 	{
-		public delegate void DataReceiveDelegate( BinaryReader reader, IPEndPoint remote );
+		public delegate void DataReceiveDelegate( AgnConnection sender, BinaryReader reader );
 
 		private const float RttSmooth = 0.1f;
 
@@ -21,13 +21,13 @@ namespace ActionGameNetworking
 
 		private static TimeSpan MaxRtt = new TimeSpan( 0, 0, 5 );
 
-		public float LatencySimulation { get; set; }
-
-		public float DropRateSimulation { get; set; }
-
 		public float CurrentRtt { get; private set; }
 
 		public float CurrentDropRate { get; private set; }
+
+		public IPEndPoint Remote { get; private set; }
+
+		public DateTime LastReceiveTime { get; private set; }
 
 		public event DataReceiveDelegate DataReceive;
 
@@ -51,17 +51,9 @@ namespace ActionGameNetworking
 
 		#endregion
 
-		protected Socket Socket { get; set; }
-
-		private byte[] _receiveBuffer;
-
-		private List<AgnLaggedBuffer> _laggedBuffers;
-
-		private Random _lossRateRandom;
+		private AgnNode _node;
 
 		private uint _currentSequence;
-
-		private uint _protocolId;
 
 		private uint _currentAck;
 
@@ -69,149 +61,43 @@ namespace ActionGameNetworking
 
 		private List<AgnPacketSendInfo> _sendInfos;
 
-		public AgnConnection( uint protocolId, int receiveBufferLength = 0x10000 )
+		private uint _protocolId;
+
+		public AgnConnection( AgnNode node, IPEndPoint remote, uint protocolId, int receiveBufferLength = 0x1000 )
 		{
-			this.Socket = new Socket( AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp );
-			this.Socket.Blocking = false;
-
-			this.LatencySimulation = 0.0f;
-			this.DropRateSimulation = 0.0f;
 			this.CurrentRtt = 0.0f;
+			this.Remote = remote;
 
-			_receiveBuffer = new byte[receiveBufferLength];
-			_laggedBuffers = new List<AgnLaggedBuffer>();
-			_lossRateRandom = new Random();
+			_node = node;
 			_currentSequence = 0;
-			_protocolId = protocolId;
 			_currentAck = 0;
 			_currentAckBitfield = 0;
 			_sendInfos = new List<AgnPacketSendInfo>();
+			_protocolId = protocolId;
 		}
 
-		public void Close()
+		public void SendTo( byte[] buffer )
 		{
-			this.Dispose();
+			this.SendTo( buffer, 0, buffer.Length );
 		}
 
-		public void SendTo( byte[] buffer, IPEndPoint remote )
+		public void SendTo( byte[] buffer, int size )
 		{
-			this.SendTo( buffer, 0, buffer.Length, remote );
+			this.SendTo( buffer, 0, size );
 		}
 
-		public void SendTo( byte[] buffer, int size, IPEndPoint remote )
+		public void SendTo( byte[] buffer, int offset, int size )
 		{
-			this.SendTo( buffer, 0, size, remote );
-		}
-
-		public void SendTo( byte[] buffer, string hostname, int port )
-		{
-			this.SendTo( buffer, 0, buffer.Length, hostname, port );
-		}
-
-		public void SendTo( byte[] buffer, int size, string hostname, int port )
-		{
-			this.SendTo( buffer, 0, size, hostname, port );
-		}
-
-		public void SendTo( byte[] buffer, int offset, int size, string hostname, int port )
-		{
-			var remote = new IPEndPoint( IPAddress.Parse( hostname ), port );
-			this.SendTo( buffer, offset, size, remote );
-		}
-
-		public void SendTo( byte[] buffer, int offset, int size, IPEndPoint remote )
-		{
-			if( this.LatencySimulation == 0.0f )
-			{
-				this.DoSendTo( buffer, offset, size, remote, DateTime.Now );
-			}
-			else
-			{
-				_laggedBuffers.Add( new AgnLaggedBuffer( DateTime.Now, buffer, offset, size, remote ) );
-			}
-		}
-
-		public virtual void Update( TimeSpan elapsedTime )
-		{
-			this.ReceiveData();
-			this.SendLaggedBuffers();
-		}
-
-		public void Dispose()
-		{
-			this.Socket.Close();
-		}
-
-		private void ReceiveData()
-		{
-			IPEndPoint remote = null;
-			
-			for( ;;)
-			{
-				var data = this.ReceiveFrom( out remote );
-				if( data == null )
-				{
-					break;
-				}
-				
-				this.ProcessReceivedData( data, remote );
-			}
-		}
-
-		private MemoryStream ReceiveFrom( out IPEndPoint remote )
-		{
-			remote = null;
-
-			if( this.Socket.Available == 0 )
-			{
-				return null;
-			}
-
-			EndPoint endPoint = new IPEndPoint( IPAddress.Any, IPEndPoint.MinPort );
-
-			if( this.Socket.Available > _receiveBuffer.Length )
-			{
-				var length = Math.Max( this.Socket.Available, _receiveBuffer.Length * 2 );
-				_receiveBuffer = new byte[length];
-			}
-
-			try
-			{
-				var bytesReceived = this.Socket.ReceiveFrom( _receiveBuffer, SocketFlags.None, ref endPoint );
-				remote = endPoint as IPEndPoint;
-
-				var data = new MemoryStream( bytesReceived );
-				data.Write( _receiveBuffer, 0, bytesReceived );
-				data.Position = 0;
-				return data;
-			}
-			catch( Exception )
-			{
-				return null;
-			}
-		}
-
-		private void SendLaggedBuffers()
-		{
-			if( _laggedBuffers.Count == 0 )
-			{
-				return;
-			}
-
 			var now = DateTime.Now;
-			for( int i = 0; i < _laggedBuffers.Count; i++ )
-			{
-				var laggedBuffer = _laggedBuffers[i];
-				if( now - laggedBuffer.SendTime > TimeSpan.FromSeconds( this.LatencySimulation ) )
-				{
-					this.DoSendTo( laggedBuffer );
-					_laggedBuffers.RemoveAt( i );
-					i--;
-				}
-			}
+
+			var header = this.GenerateHeader();
+			_node.SendTo( buffer, offset, size, this.Remote, header );
+
+			_sendInfos.Add( new AgnPacketSendInfo( _currentSequence, now ) );
+			_sendInfos.RemoveAll( s => now - s.Time > MaxRtt );
 		}
 
-		private void ProcessReceivedData( MemoryStream data, IPEndPoint remote )
+		internal void ProcessReceivedData( MemoryStream data, IPEndPoint remote )
 		{
 			var reader = new BinaryReader( data );
 			while( data.Position < data.Length )
@@ -256,21 +142,22 @@ namespace ActionGameNetworking
 
 				if( this.DataReceive != null )
 				{
-					this.DataReceive( reader, remote );
+					this.DataReceive( this, reader );
 				}
 			}
 		}
 
 		private void UpdateRtt( uint sequence )
 		{
-			var info = _sendInfos.Find( s => s.Sequence == sequence );
+			this.LastReceiveTime = DateTime.Now;
 
+			var info = _sendInfos.Find( s => s.Sequence == sequence );
 			if( info == null || info.Acked )
 			{
 				return;
 			}
 
-			var rttSpan = DateTime.Now - info.Time;
+			var rttSpan = this.LastReceiveTime - info.Time;
 			var rtt = (float)rttSpan.TotalSeconds;
 			this.CurrentRtt += ( rtt - this.CurrentRtt ) * 0.1f;
 		}
@@ -285,38 +172,6 @@ namespace ActionGameNetworking
 
 			var dropRate = (float)zeroes / ( sizeof( uint ) * 8 );
 			this.CurrentDropRate += ( dropRate - this.CurrentDropRate ) * DropRateSmooth;
-		}
-
-		private void DoSendTo( byte[] buffer, int offset, int size, IPEndPoint remote, DateTime time )
-		{
-			var header = this.GenerateHeader();
-
-			if( this.DropRateSimulation != 0.0f )
-			{
-				var rand = (float)_lossRateRandom.NextDouble();
-				if( rand < this.DropRateSimulation )
-				{
-					return;
-				}
-			}
-
-			var packet = new MemoryStream();
-			var writer = new BinaryWriter( packet );
-
-			header.Write( writer );
-			writer.Write( buffer, offset, size );
-
-			this.Socket.SendTo( packet.GetBuffer(), (int)packet.Length, SocketFlags.None, remote );
-
-			_sendInfos.Add( new AgnPacketSendInfo( _currentSequence, time ) );
-
-			var now = DateTime.Now;
-			_sendInfos.RemoveAll( s => now - s.Time > MaxRtt );
-		}
-
-		private void DoSendTo( AgnLaggedBuffer laggedBuffer )
-		{
-			this.DoSendTo( laggedBuffer.Buffer, laggedBuffer.Offset, laggedBuffer.Size, laggedBuffer.Remote, laggedBuffer.SendTime );
 		}
 
 		private AgnPacketHeader GenerateHeader()

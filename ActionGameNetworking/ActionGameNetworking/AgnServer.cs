@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 
 namespace ActionGameNetworking
 {
-	public class AgnServer : AgnNode
+	public class AgnServer : AgnConnection
 	{
 		public AgnServer( uint protocolId, int port )
 			: base( protocolId )

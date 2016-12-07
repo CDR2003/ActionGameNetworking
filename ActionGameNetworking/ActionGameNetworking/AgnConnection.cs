@@ -11,7 +11,7 @@ using System.Threading.Tasks;
 
 namespace ActionGameNetworking
 {
-	public abstract class AgnNode : IDisposable
+	public abstract class AgnConnection : IDisposable
 	{
 		public delegate void DataReceiveDelegate( BinaryReader reader, IPEndPoint remote );
 
@@ -69,7 +69,7 @@ namespace ActionGameNetworking
 
 		private List<AgnPacketSendInfo> _sendInfos;
 
-		public AgnNode( uint protocolId, int receiveBufferLength = 0x10000 )
+		public AgnConnection( uint protocolId, int receiveBufferLength = 0x10000 )
 		{
 			this.Socket = new Socket( AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp );
 			this.Socket.Blocking = false;

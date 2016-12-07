@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace ActionGameNetworking
 {
-	internal static class AgnExtensions
+	public static class AgnExtensions
 	{
 		public static int GetNumberOfOnes( this uint n )
 		{
@@ -24,6 +24,12 @@ namespace ActionGameNetworking
 		public static int GetNumberOfZeroes( this uint n )
 		{
 			return sizeof( uint ) * 8 - n.GetNumberOfOnes();
+		}
+
+		public static void AppendFormatLine( this StringBuilder sb, string format, params object[] args )
+		{
+			sb.AppendFormat( format, args );
+			sb.AppendLine();
 		}
 	}
 }

@@ -76,7 +76,7 @@ namespace SampleServer
 
 			var sb = new StringBuilder();
 			sb.AppendLine( "Server" );
-			sb.AppendFormat( "Ack: {0}\n", _server.CurrentAck );
+			sb.AppendFormatLine( "Ack: {0}", _server.CurrentAck );
 
 			_spriteBatch.Begin();
 			_spriteBatch.DrawString( _font, sb.ToString(), new Vector2( 100.0f, 100.0f ), Color.White );

@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace ActionGameNetworking
 {
-	public class AgnClient : AgnNode
+	public class AgnClient : AgnConnection
 	{
 		public AgnClient( uint protocolId )
 			: base( protocolId )

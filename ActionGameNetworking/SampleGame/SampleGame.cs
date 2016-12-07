@@ -95,11 +95,11 @@ namespace SampleGame
 
 			var sb = new StringBuilder();
 			sb.AppendLine( "Client" );
-			sb.AppendFormat( "Latency Simulation: {0:0}ms\n", _client.LatencySimulation * 1000.0f );
-			sb.AppendFormat( "Drop Rate Simulation: {0:0}%\n", _client.DropRateSimulation * 100.0f );
-			sb.AppendFormat( "Sequence: {0}\n", _client.CurrentSequence );
-			sb.AppendFormat( "RTT: {0:0}ms\n", _client.CurrentRtt * 1000.0f );
-			sb.AppendFormat( "Drop Rate: {0:0}%", _client.CurrentDropRate * 100.0f );
+			sb.AppendFormatLine( "Latency Simulation: {0:0}ms", _client.LatencySimulation * 1000.0f );
+			sb.AppendFormatLine( "Drop Rate Simulation: {0:0}%", _client.DropRateSimulation * 100.0f );
+			sb.AppendFormatLine( "Sequence: {0}", _client.CurrentSequence );
+			sb.AppendFormatLine( "RTT: {0:0}ms", _client.CurrentRtt * 1000.0f );
+			sb.AppendFormatLine( "Drop Rate: {0:0}%", _client.CurrentDropRate * 100.0f );
 
 			_spriteBatch.Begin();
 			_spriteBatch.DrawString( _font, sb.ToString(), new Vector2( 100.0f, 100.0f ), Color.White );

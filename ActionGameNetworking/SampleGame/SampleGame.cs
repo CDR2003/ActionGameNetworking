@@ -2,7 +2,9 @@
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
+using SampleCommon;
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Net;
@@ -25,27 +27,49 @@ namespace SampleGame
 
 		private SpriteFont _font;
 
+		private Dictionary<int, Character> _characters;
+
+		private Character _hostCharacter;
+
 		public SampleGame()
 		{
 			_graphics = new GraphicsDeviceManager( this );
+			_characters = new Dictionary<int, Character>();
 			Content.RootDirectory = "Content";
 		}
 		
 		protected override void Initialize()
 		{
+			this.IsMouseVisible = true;
+
 			_client = new AgnClient( 0x0bad );
 			_client.ServerDataReceive += OnServerDataReceived;
-			_client.LatencySimulation = 0.1f;
-			_client.DropRateSimulation = 0.1f;
 
 			_client.Connect( "192.168.0.104", 30000 );
+
+			var login = new LoginPacket();
+			login.Send( _client.Connection );
 
 			base.Initialize();
 		}
 
 		private void OnServerDataReceived( BinaryReader reader )
 		{
-			reader.ReadInt32();
+			var type = (Packet.Type)reader.ReadUInt32();
+			switch( type )
+			{
+				case Packet.Type.CreateCharacter:
+					this.ProcessCreateCharacter( reader );
+					break;
+				case Packet.Type.UpdateCharacterState:
+					this.ProcessUpdateCharacterState( reader );
+					break;
+				case Packet.Type.DestroyCharacter:
+					this.ProcessDestroyCharacter( reader );
+					break;
+				default:
+					throw new Exception();
+			}
 		}
 
 		protected override void LoadContent()
@@ -53,7 +77,7 @@ namespace SampleGame
 			_spriteBatch = new SpriteBatch( GraphicsDevice );
 			_font = this.Content.Load<SpriteFont>( "Arial" );
 		}
-		
+
 		protected override void UnloadContent()
 		{
 		}
@@ -65,32 +89,24 @@ namespace SampleGame
 				this.Exit();
 			}
 
-			if( Keyboard.GetState().IsKeyDown( Keys.Enter ) )
+			if( _hostCharacter != null )
 			{
-				_client.LatencySimulation = 0.0f;
-			}
-
-			if( Keyboard.GetState().IsKeyDown( Keys.Space ) )
-			{
-				_client.DropRateSimulation = 0.0f;
+				_hostCharacter.UpdateInput( gameTime );
 			}
 
 			_currentTime += gameTime.ElapsedGameTime;
-			if( _currentTime.TotalSeconds > 0.03 )
+			if( _currentTime.TotalSeconds > 1.0 / 60.0 )
 			{
 				_currentTime = TimeSpan.Zero;
 
-				var data = new MemoryStream();
-				var writer = new BinaryWriter( data );
-				writer.Write( gameTime.TotalGameTime.TotalSeconds );
-				_client.SendTo( data.GetBuffer(), (int)data.Length );
+				this.CommitHostCharacter();
 			}
 
 			_client.Update( gameTime.ElapsedGameTime );
 
 			base.Update( gameTime );
 		}
-		
+
 		protected override void Draw( GameTime gameTime )
 		{
 			GraphicsDevice.Clear( Color.CornflowerBlue );
@@ -104,10 +120,66 @@ namespace SampleGame
 			sb.AppendFormatLine( "Drop Rate: {0:0}%", _client.CurrentDropRate * 100.0f );
 
 			_spriteBatch.Begin();
-			_spriteBatch.DrawString( _font, sb.ToString(), new Vector2( 100.0f, 100.0f ), Color.White );
+
+			foreach( var character in _characters.Values )
+			{
+				character.Draw( _spriteBatch );
+			}
+
+			_spriteBatch.DrawString( _font, sb.ToString(), Vector2.Zero, this.IsActive ? Color.White : Color.LightGray );
 			_spriteBatch.End();
 
 			base.Draw( gameTime );
+		}
+
+		private void CommitHostCharacter()
+		{
+			if( _hostCharacter == null )
+			{
+				return;
+			}
+
+			var packet = new CommitCharacterInputPacket();
+			packet.Direction = _hostCharacter.CurrentDirection;
+			packet.Send( _client.Connection );
+		}
+
+		private void ProcessCreateCharacter( BinaryReader reader )
+		{
+			var packet = new CreateCharacterPacket();
+			packet.ReadFromStream( reader );
+
+			var character = new Character( packet.Id, packet.IsHost, packet.Position, packet.Color );
+			character.Load( this.Content );
+			_characters.Add( character.Id, character );
+
+			if( character.IsHost )
+			{
+				_hostCharacter = character;
+			}
+		}
+
+		private void ProcessDestroyCharacter( BinaryReader reader )
+		{
+			var packet = new DestroyCharacterPacket();
+			packet.ReadFromStream( reader );
+
+			_characters.Remove( packet.Id );
+		}
+
+		private void ProcessUpdateCharacterState( BinaryReader reader )
+		{
+			var packet = new UpdateCharacterStatePacket();
+			packet.ReadFromStream( reader );
+
+			Character character = null;
+			if( _characters.TryGetValue( packet.Id, out character ) == false )
+			{
+				throw new Exception();
+			}
+
+			character.CurrentDirection = packet.Direction;
+			character.Position = packet.Position;
 		}
 	}
 }

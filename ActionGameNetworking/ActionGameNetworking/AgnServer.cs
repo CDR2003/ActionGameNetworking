@@ -14,6 +14,8 @@ namespace ActionGameNetworking
 	{
 		public delegate void ClientDataReceiveDelegate( BinaryReader reader, AgnConnection connection );
 
+		public delegate void ClientDisconnectDelegate( AgnConnection connection );
+
 		public TimeSpan ConnectionTimeout { get; set; }
 
 		public int Port { get; private set; }
@@ -27,6 +29,8 @@ namespace ActionGameNetworking
 		}
 
 		public event ClientDataReceiveDelegate ClientDataReceive;
+
+		public event ClientDisconnectDelegate ClientDisconnect;
 
 		private Dictionary<IPEndPoint, AgnConnection> _connections;
 
@@ -44,24 +48,50 @@ namespace ActionGameNetworking
 			this.Socket.Bind( new IPEndPoint( IPAddress.Any, this.Port ) );
 		}
 
+		public void Broadcast( byte[] buffer )
+		{
+			this.Broadcast( buffer, 0, buffer.Length );
+		}
+
+		public void Broadcast( byte[] buffer, int size )
+		{
+			this.Broadcast( buffer, 0, size );
+		}
+
+		public void Broadcast( byte[] buffer, int offset, int size )
+		{
+			foreach( var connection in this.Connections )
+			{
+				connection.SendTo( buffer, offset, size );
+			}
+		}
+
 		public override void Update( TimeSpan elapsedTime )
 		{
 			base.Update( elapsedTime );
-
-			var remotesToRemove = new List<IPEndPoint>();
+			
+			var connectionsToRemove = new List<AgnConnection>();
 
 			var now = DateTime.Now;
 			foreach( var connection in this.Connections )
 			{
 				if( now - connection.LastReceiveTime > this.ConnectionTimeout )
 				{
-					remotesToRemove.Add( connection.Remote );
+					connectionsToRemove.Add( connection );
 				}
 			}
 
-			foreach( var remote in remotesToRemove )
+			foreach( var connection in connectionsToRemove )
 			{
-				_connections.Remove( remote );
+				_connections.Remove( connection.Remote );
+			}
+
+			if( this.ClientDisconnect != null )
+			{
+				foreach( var connection in connectionsToRemove )
+				{
+					this.ClientDisconnect( connection );
+				}
 			}
 		}
 

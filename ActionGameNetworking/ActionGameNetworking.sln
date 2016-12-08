@@ -1,13 +1,15 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 14
-VisualStudioVersion = 14.0.23107.0
+VisualStudioVersion = 14.0.25420.1
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ActionGameNetworking", "ActionGameNetworking\ActionGameNetworking.csproj", "{C1FFDC54-D184-4741-9025-F53B5CAAAAEC}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SampleGame", "SampleGame\SampleGame.csproj", "{ECF17125-6742-4D53-AF3C-FB940ADA1243}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SampleServer", "SampleServer\SampleServer.csproj", "{6B37B777-4CD2-40C9-9229-764AEE41F6E9}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SampleCommon", "SampleCommon\SampleCommon.csproj", "{75FB7FB7-DDDB-489A-A411-E41F67699586}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -39,6 +41,14 @@ Global
 		{6B37B777-4CD2-40C9-9229-764AEE41F6E9}.Release|Any CPU.ActiveCfg = Release|x86
 		{6B37B777-4CD2-40C9-9229-764AEE41F6E9}.Release|x86.ActiveCfg = Release|x86
 		{6B37B777-4CD2-40C9-9229-764AEE41F6E9}.Release|x86.Build.0 = Release|x86
+		{75FB7FB7-DDDB-489A-A411-E41F67699586}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{75FB7FB7-DDDB-489A-A411-E41F67699586}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{75FB7FB7-DDDB-489A-A411-E41F67699586}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{75FB7FB7-DDDB-489A-A411-E41F67699586}.Debug|x86.Build.0 = Debug|Any CPU
+		{75FB7FB7-DDDB-489A-A411-E41F67699586}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{75FB7FB7-DDDB-489A-A411-E41F67699586}.Release|Any CPU.Build.0 = Release|Any CPU
+		{75FB7FB7-DDDB-489A-A411-E41F67699586}.Release|x86.ActiveCfg = Release|Any CPU
+		{75FB7FB7-DDDB-489A-A411-E41F67699586}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

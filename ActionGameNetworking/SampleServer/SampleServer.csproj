@@ -64,6 +64,10 @@
       <Project>{c1ffdc54-d184-4741-9025-f53b5caaaaec}</Project>
       <Name>ActionGameNetworking</Name>
     </ProjectReference>
+    <ProjectReference Include="..\SampleCommon\SampleCommon.csproj">
+      <Project>{75fb7fb7-dddb-489a-a411-e41f67699586}</Project>
+      <Name>SampleCommon</Name>
+    </ProjectReference>
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config" />

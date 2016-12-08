@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace ActionGameNetworking
 {
-	internal class AgnPacketHeader
+	internal class AgnPacketHeader : IAgnNetSerializable
 	{
 		internal uint ProtocolId { get; set; }
 
@@ -17,20 +17,20 @@ namespace ActionGameNetworking
 
 		internal uint AckBitfield { get; set; }
 
-		internal void Read( BinaryReader reader )
-		{
-			this.ProtocolId = reader.ReadUInt32();
-			this.Sequence = reader.ReadUInt32();
-			this.Ack = reader.ReadUInt32();
-			this.AckBitfield = reader.ReadUInt32();
-		}
-
-		internal void Write( BinaryWriter writer )
+		public void WriteToStream( BinaryWriter writer )
 		{
 			writer.Write( this.ProtocolId );
 			writer.Write( this.Sequence );
 			writer.Write( this.Ack );
 			writer.Write( this.AckBitfield );
+		}
+
+		public void ReadFromStream( BinaryReader reader )
+		{
+			this.ProtocolId = reader.ReadUInt32();
+			this.Sequence = reader.ReadUInt32();
+			this.Ack = reader.ReadUInt32();
+			this.AckBitfield = reader.ReadUInt32();
 		}
 	}
 }

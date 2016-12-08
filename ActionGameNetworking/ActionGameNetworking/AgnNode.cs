@@ -83,7 +83,7 @@ namespace ActionGameNetworking
 			var packet = new MemoryStream();
 			var writer = new BinaryWriter( packet );
 
-			header.Write( writer );
+			header.WriteToStream( writer );
 			writer.Write( buffer, offset, size );
 
 			this.Socket.SendTo( packet.GetBuffer(), (int)packet.Length, SocketFlags.None, remote );

@@ -105,7 +105,7 @@ namespace ActionGameNetworking
 				var header = new AgnPacketHeader();
 				try
 				{
-					header.Read( reader );
+					header.ReadFromStream( reader );
 				}
 				catch( Exception )
 				{

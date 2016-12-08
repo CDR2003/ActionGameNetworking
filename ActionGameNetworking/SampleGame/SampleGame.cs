@@ -100,6 +100,17 @@ namespace SampleGame
 				this.Exit();
 			}
 
+			var keys = Keyboard.GetState().GetPressedKeys();
+			if( keys.Length > 0 )
+			{
+				var key = keys[0];
+				if( Keys.D0 <= key && key <= Keys.D9 )
+				{
+					var number = key - Keys.D0;
+					_client.LatencySimulation = number * 0.05f;
+				}
+			}
+
 			if( _hostCharacter != null )
 			{
 				_hostCharacter.UpdateInput();
@@ -112,9 +123,9 @@ namespace SampleGame
 				this.CommitHostCharacter();
 			}
 
-			if( _hostCharacter != null )
+			foreach( var character in _characters.Values )
 			{
-				_hostCharacter.Simulate( (float)gameTime.ElapsedGameTime.TotalSeconds );
+				character.Simulate( (float)gameTime.ElapsedGameTime.TotalSeconds );
 			}
 
 			_client.Update( gameTime.ElapsedGameTime );

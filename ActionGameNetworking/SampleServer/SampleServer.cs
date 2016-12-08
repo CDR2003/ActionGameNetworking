@@ -76,9 +76,15 @@ namespace SampleServer
 			if( GamePad.GetState( PlayerIndex.One ).Buttons.Back == ButtonState.Pressed || Keyboard.GetState().IsKeyDown( Keys.Escape ) )
 				Exit();
 
-			if( Keyboard.GetState().IsKeyDown( Keys.Space ) )
+			var keys = Keyboard.GetState().GetPressedKeys();
+			if( keys.Length > 0 )
 			{
-				_server.LatencySimulation = 0.0f;
+				var key = keys[0];
+				if( Keys.D0 <= key && key <= Keys.D9 )
+				{
+					var number = key - Keys.D0;
+					_server.LatencySimulation = number * 0.05f;
+				}
 			}
 
 			_currentTime += gameTime.ElapsedGameTime;

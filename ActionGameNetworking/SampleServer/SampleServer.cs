@@ -17,6 +17,8 @@ namespace SampleServer
 	/// </summary>
 	public class SampleServer : Game
 	{
+		public const float FrameInterval = 1.0f / 20.0f;
+
 		private GraphicsDeviceManager _graphics;
 
 		private SpriteBatch _spriteBatch;
@@ -80,7 +82,7 @@ namespace SampleServer
 			}
 
 			_currentTime += gameTime.ElapsedGameTime;
-			if( _currentTime.TotalSeconds >= 1.0 / 20.0 )
+			if( _currentTime.TotalSeconds >= FrameInterval )
 			{
 				_currentTime = TimeSpan.Zero;
 
@@ -88,15 +90,15 @@ namespace SampleServer
 				{
 					this.BroadcastCharacterState( character );
 				}
+
+				foreach( var character in _characters.Values )
+				{
+					character.Simulate( FrameInterval );
+				}
 			}
 
 			//_server.LatencySimulation = _random.NextFloat( 0.05f, 0.2f );
 			_server.Update( gameTime.ElapsedGameTime );
-
-			foreach( var character in _characters.Values )
-			{
-				character.Simulate( gameTime );
-			}
 
 			base.Update( gameTime );
 		}
@@ -217,6 +219,7 @@ namespace SampleServer
 				return;
 			}
 
+			character.CurrentInputId = packet.InputId;
 			character.CurrentDirection = packet.Direction;
 		}
 
@@ -224,6 +227,7 @@ namespace SampleServer
 		{
 			var packet = new UpdateCharacterStatePacket();
 			packet.Id = character.Id;
+			packet.InputId = character.CurrentInputId;
 			packet.Direction = character.CurrentDirection;
 			packet.Position = character.Position;
 			packet.Broadcast( _server );

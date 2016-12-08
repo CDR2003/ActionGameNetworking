@@ -18,15 +18,19 @@ namespace SampleCommon
 			}
 		}
 
+		public int InputId { get; set; }
+
 		public Vector2 Direction { get; set; }
 
 		public override void ReadFromStream( BinaryReader reader )
 		{
+			this.InputId = reader.ReadInt32();
 			this.Direction = reader.ReadVector2();
 		}
 
 		public override void WriteToStream( BinaryWriter writer )
 		{
+			writer.Write( this.InputId );
 			writer.Write( this.Direction );
 		}
 	}

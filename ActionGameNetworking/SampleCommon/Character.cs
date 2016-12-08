@@ -24,6 +24,8 @@ namespace SampleCommon
 
 		public Vector2 CurrentDirection { get; set; }
 
+		public int CurrentInputId { get; set; }
+
 		private Texture2D _texture;
 
 		public Character( int id, bool isHost, Vector2 initialPosition, Color color )
@@ -33,6 +35,7 @@ namespace SampleCommon
 			this.Position = initialPosition;
 			this.Color = color;
 			this.Speed = 500.0f;
+			this.CurrentInputId = 0;
 		}
 
 		public void Load( ContentManager content )
@@ -40,12 +43,12 @@ namespace SampleCommon
 			_texture = content.Load<Texture2D>( "Heal" );
 		}
 
-		public void Simulate( GameTime gameTime )
+		public void Simulate( float elapsedTime )
 		{
-			this.Position += this.CurrentDirection * this.Speed * (float)gameTime.ElapsedGameTime.TotalSeconds;
+			this.Position += this.CurrentDirection * this.Speed * elapsedTime;
 		}
 
-		public void UpdateInput( GameTime gameTime )
+		public void UpdateInput()
 		{
 			if( this.IsHost == false )
 			{

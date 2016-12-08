@@ -20,6 +20,8 @@ namespace SampleCommon
 
 		public int Id { get; set; }
 
+		public int InputId { get; set; }
+
 		public Vector2 Direction { get; set; }
 
 		public Vector2 Position { get; set; }
@@ -27,6 +29,7 @@ namespace SampleCommon
 		public override void ReadFromStream( BinaryReader reader )
 		{
 			this.Id = reader.ReadInt32();
+			this.InputId = reader.ReadInt32();
 			this.Direction = reader.ReadVector2();
 			this.Position = reader.ReadVector2();
 		}
@@ -34,6 +37,7 @@ namespace SampleCommon
 		public override void WriteToStream( BinaryWriter writer )
 		{
 			writer.Write( this.Id );
+			writer.Write( this.InputId );
 			writer.Write( this.Direction );
 			writer.Write( this.Position );
 		}

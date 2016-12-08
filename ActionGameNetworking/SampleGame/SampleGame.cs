@@ -17,6 +17,10 @@ namespace SampleGame
 	/// </summary>
 	public class SampleGame : Game
 	{
+		public const float FrameInterval = 1.0f / 60.0f;
+
+		public const float MaxLagDistance = 100.0f;
+
 		private GraphicsDeviceManager _graphics;
 
 		private SpriteBatch _spriteBatch;
@@ -31,10 +35,16 @@ namespace SampleGame
 
 		private Character _hostCharacter;
 
+		private int _currentInputId;
+
+		private List<CommitCharacterInputPacket> _previousInputPackets;
+
 		public SampleGame()
 		{
 			_graphics = new GraphicsDeviceManager( this );
 			_characters = new Dictionary<int, Character>();
+			_currentInputId = 0;
+			_previousInputPackets = new List<CommitCharacterInputPacket>();
 			Content.RootDirectory = "Content";
 		}
 		
@@ -43,6 +53,7 @@ namespace SampleGame
 			this.IsMouseVisible = true;
 
 			_client = new AgnClient( 0x0bad );
+			_client.LatencySimulation = 0.2f;
 			_client.ServerDataReceive += OnServerDataReceived;
 
 			_client.Connect( "192.168.0.104", 30000 );
@@ -91,15 +102,19 @@ namespace SampleGame
 
 			if( _hostCharacter != null )
 			{
-				_hostCharacter.UpdateInput( gameTime );
+				_hostCharacter.UpdateInput();
 			}
 
 			_currentTime += gameTime.ElapsedGameTime;
-			if( _currentTime.TotalSeconds > 1.0 / 60.0 )
+			if( _currentTime.TotalSeconds > FrameInterval )
 			{
 				_currentTime = TimeSpan.Zero;
-
 				this.CommitHostCharacter();
+			}
+
+			if( _hostCharacter != null )
+			{
+				_hostCharacter.Simulate( (float)gameTime.ElapsedGameTime.TotalSeconds );
 			}
 
 			_client.Update( gameTime.ElapsedGameTime );
@@ -139,9 +154,14 @@ namespace SampleGame
 				return;
 			}
 
+			_currentInputId++;
+
 			var packet = new CommitCharacterInputPacket();
+			packet.InputId = _currentInputId;
 			packet.Direction = _hostCharacter.CurrentDirection;
 			packet.Send( _client.Connection );
+
+			_previousInputPackets.Add( packet );
 		}
 
 		private void ProcessCreateCharacter( BinaryReader reader )
@@ -178,8 +198,38 @@ namespace SampleGame
 				throw new Exception();
 			}
 
+			var oldPosition = character.Position;
+
 			character.CurrentDirection = packet.Direction;
 			character.Position = packet.Position;
+
+			if( character == _hostCharacter )
+			{
+				this.ResimulateFrom( packet.InputId, oldPosition );
+			}
+		}
+
+		private void ResimulateFrom( int inputId, Vector2 clientPosition )
+		{
+			var index = _previousInputPackets.FindIndex( c => c.InputId == inputId );
+			if( index == -1 )
+			{
+				return;
+			}
+
+			for( int i = index + 1; i < _previousInputPackets.Count; i++ )
+			{
+				var packet = _previousInputPackets[i];
+				_hostCharacter.CurrentDirection = packet.Direction;
+				_hostCharacter.Simulate( FrameInterval );
+			}
+			
+			_previousInputPackets.RemoveRange( 0, index + 1 );
+
+			if( Vector2.Distance( clientPosition, _hostCharacter.Position ) < MaxLagDistance )
+			{
+				_hostCharacter.Position = clientPosition;
+			}
 		}
 	}
 }

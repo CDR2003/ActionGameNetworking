@@ -74,6 +74,11 @@ namespace SampleServer
 			if( GamePad.GetState( PlayerIndex.One ).Buttons.Back == ButtonState.Pressed || Keyboard.GetState().IsKeyDown( Keys.Escape ) )
 				Exit();
 
+			if( Keyboard.GetState().IsKeyDown( Keys.Space ) )
+			{
+				_server.LatencySimulation = 0.0f;
+			}
+
 			_currentTime += gameTime.ElapsedGameTime;
 			if( _currentTime.TotalSeconds >= 1.0 / 20.0 )
 			{
@@ -102,6 +107,7 @@ namespace SampleServer
 
 			var sb = new StringBuilder();
 			sb.AppendLine( "Server" );
+			sb.AppendFormatLine( "    Latency Simulation: {0}ms", _server.LatencySimulation * 1000.0f );
 			sb.AppendLine( "Clients:" );
 
 			var index = 0;

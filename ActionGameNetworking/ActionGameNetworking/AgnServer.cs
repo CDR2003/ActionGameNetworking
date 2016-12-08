@@ -37,7 +37,7 @@ namespace ActionGameNetworking
 		public AgnServer( uint protocolId, int port )
 			: base( protocolId )
 		{
-			this.ConnectionTimeout = new TimeSpan( 0, 0, 1 );
+			this.ConnectionTimeout = new TimeSpan( 0, 0, 5 );
 			this.Port = port;
 
 			_connections = new Dictionary<IPEndPoint, AgnConnection>();

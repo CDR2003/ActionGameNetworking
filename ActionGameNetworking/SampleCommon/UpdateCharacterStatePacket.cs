@@ -14,7 +14,7 @@ namespace SampleCommon
 		{
 			get
 			{
-				return Type.UpdateCharacterState;
+				return Type.SC_UpdateCharacterState;
 			}
 		}
 

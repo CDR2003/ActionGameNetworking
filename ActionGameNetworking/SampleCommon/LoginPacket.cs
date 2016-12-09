@@ -13,7 +13,7 @@ namespace SampleCommon
 		{
 			get
 			{
-				return Type.Login;
+				return Type.CS_Login;
 			}
 		}
 

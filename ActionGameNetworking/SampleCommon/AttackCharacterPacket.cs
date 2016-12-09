@@ -7,26 +7,22 @@ using System.Threading.Tasks;
 
 namespace SampleCommon
 {
-	public class DestroyCharacterPacket : Packet
+	public class AttackCharacterPacket : Packet
 	{
 		public override Type PacketType
 		{
 			get
 			{
-				return Type.SC_DestroyCharacter;
+				return Type.CS_AttackCharacter;
 			}
 		}
 
-		public int Id { get; set; }
-
 		public override void ReadFromStream( BinaryReader reader )
 		{
-			this.Id = reader.ReadInt32();
 		}
 
 		public override void WriteToStream( BinaryWriter writer )
 		{
-			writer.Write( this.Id );
 		}
 	}
 }

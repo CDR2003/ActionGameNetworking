@@ -11,7 +11,7 @@ namespace SampleCommon
 {
 	public class CreateCharacterPacket : Packet
 	{
-		public override Type PacketType { get { return Type.CreateCharacter; } }
+		public override Type PacketType { get { return Type.SC_CreateCharacter; } }
 
 		public int Id { get; set; }
 

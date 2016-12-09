@@ -14,7 +14,7 @@ namespace SampleCommon
 		{
 			get
 			{
-				return Type.CommitCharacterInput;
+				return Type.CS_CommitCharacterInput;
 			}
 		}
 

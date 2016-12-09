@@ -12,11 +12,13 @@ namespace SampleCommon
 	{
 		public enum Type : uint
 		{
-			Login,
-			CreateCharacter,
-			DestroyCharacter,
-			CommitCharacterInput,
-			UpdateCharacterState,
+			CS_Login,
+			CS_CommitCharacterInput,
+			CS_AttackCharacter,
+
+			SC_CreateCharacter,
+			SC_DestroyCharacter,
+			SC_UpdateCharacterState,
 		}
 
 		public abstract Type PacketType { get; }

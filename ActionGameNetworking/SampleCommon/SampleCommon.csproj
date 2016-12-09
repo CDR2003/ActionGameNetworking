@@ -42,14 +42,18 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="AttackCharacterPacket.cs" />
     <Compile Include="Character.cs" />
+    <Compile Include="CharacterSnapshot.cs" />
     <Compile Include="CommitCharacterInputPacket.cs" />
     <Compile Include="CreateCharacterPacket.cs" />
     <Compile Include="DestroyCharacterPacket.cs" />
     <Compile Include="Extensions.cs" />
     <Compile Include="LoginPacket.cs" />
+    <Compile Include="Snapshot.cs" />
     <Compile Include="Packet.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="SnapshotHistory.cs" />
     <Compile Include="UpdateCharacterStatePacket.cs" />
   </ItemGroup>
   <ItemGroup>

@@ -19,8 +19,6 @@ namespace SampleGame
 	{
 		public const float FrameInterval = 1.0f / 60.0f;
 
-		public const float MaxLagDistance = 100.0f;
-
 		private GraphicsDeviceManager _graphics;
 
 		private SpriteBatch _spriteBatch;
@@ -47,7 +45,7 @@ namespace SampleGame
 			_previousInputPackets = new List<CommitCharacterInputPacket>();
 			Content.RootDirectory = "Content";
 		}
-		
+
 		protected override void Initialize()
 		{
 			this.IsMouseVisible = true;
@@ -69,13 +67,13 @@ namespace SampleGame
 			var type = (Packet.Type)reader.ReadUInt32();
 			switch( type )
 			{
-				case Packet.Type.CreateCharacter:
+				case Packet.Type.SC_CreateCharacter:
 					this.ProcessCreateCharacter( reader );
 					break;
-				case Packet.Type.UpdateCharacterState:
+				case Packet.Type.SC_UpdateCharacterState:
 					this.ProcessUpdateCharacterState( reader );
 					break;
-				case Packet.Type.DestroyCharacter:
+				case Packet.Type.SC_DestroyCharacter:
 					this.ProcessDestroyCharacter( reader );
 					break;
 				default:
@@ -92,7 +90,7 @@ namespace SampleGame
 		protected override void UnloadContent()
 		{
 		}
-		
+
 		protected override void Update( GameTime gameTime )
 		{
 			if( GamePad.GetState( PlayerIndex.One ).Buttons.Back == ButtonState.Pressed || Keyboard.GetState().IsKeyDown( Keys.Escape ) )
@@ -111,6 +109,11 @@ namespace SampleGame
 				}
 			}
 
+			if( Keyboard.GetState().IsKeyDown( Keys.G ) )
+			{
+				Character.DrawGhosts = !Character.DrawGhosts;
+			}
+
 			_currentTime += gameTime.ElapsedGameTime;
 			if( _currentTime.TotalSeconds > FrameInterval )
 			{
@@ -121,11 +124,16 @@ namespace SampleGame
 				if( _hostCharacter != null )
 				{
 					_hostCharacter.UpdateInput();
+					_hostCharacter.Simulate( FrameInterval );
 				}
 
 				foreach( var character in _characters.Values )
 				{
-					character.Simulate( FrameInterval );
+					if( character == _hostCharacter )
+					{
+						continue;
+					}
+					this.InterpolateCharacter( character );
 				}
 
 				this.CommitHostCharacter();
@@ -207,18 +215,49 @@ namespace SampleGame
 				throw new Exception();
 			}
 
-			var oldPosition = character.Position;
-
-			character.CurrentDirection = packet.Direction;
-			character.Position = packet.Position;
-
 			if( character == _hostCharacter )
 			{
-				this.ResimulateFrom( packet.InputId, oldPosition );
+				character.CurrentDirection = packet.Direction;
+				character.Position = packet.Position;
+				this.ResimulateFrom( packet.InputId );
+			}
+			else
+			{
+				var snapshot = new CharacterSnapshot( packet.Position, packet.Direction );
+				character.History.AddSnapshot( snapshot );
 			}
 		}
 
-		private void ResimulateFrom( int inputId, Vector2 clientPosition )
+		private DateTime _lastPastTime = DateTime.Now;
+
+		private void InterpolateCharacter( Character character )
+		{
+			var pastTime = DateTime.Now - Character.InterpolationInterval;
+			Debug.Assert( pastTime >= _lastPastTime );
+
+			_lastPastTime = pastTime;
+
+			CharacterSnapshot previousSnapshot = null;
+			CharacterSnapshot nextSnapshot = null;
+			if( character.History.TryFindSnapshots( pastTime, out previousSnapshot, out nextSnapshot ) == false )
+			{
+				return;
+			}
+
+			var totalSegmentTime = nextSnapshot.Time - previousSnapshot.Time;
+			var currentSegmentTime = pastTime - previousSnapshot.Time;
+			var amount = currentSegmentTime.TotalMilliseconds / totalSegmentTime.TotalMilliseconds;
+			Debug.Assert( 0.0f <= amount && amount <= 1.0f );
+
+			character.Position = Vector2.Lerp( previousSnapshot.Position, nextSnapshot.Position, (float)amount );
+
+			character.History.Update();
+
+			character.InterpolationGhosts.Clear();
+			character.History.AddTo( character.InterpolationGhosts );
+		}
+
+		private void ResimulateFrom( int inputId )
 		{
 			var index = _previousInputPackets.FindIndex( c => c.InputId == inputId );
 			if( index == -1 )
@@ -232,15 +271,8 @@ namespace SampleGame
 				_hostCharacter.CurrentDirection = packet.Direction;
 				_hostCharacter.Simulate( FrameInterval );
 			}
-			
-			_previousInputPackets.RemoveRange( 0, index + 1 );
 
-			/*
-			if( Vector2.Distance( clientPosition, _hostCharacter.Position ) < MaxLagDistance )
-			{
-				_hostCharacter.Position = clientPosition;
-			}
-			*/
+			_previousInputPackets.RemoveRange( 0, index + 1 );
 		}
 	}
 }

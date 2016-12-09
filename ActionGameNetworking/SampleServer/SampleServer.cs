@@ -19,7 +19,7 @@ namespace SampleServer
 	{
 		public const float ClientFrameInterval = 1.0f / 60.0f;
 
-		public const float FrameInterval = 1.0f / 20.0f;
+		public const float FrameInterval = 1.0f / 10.0f;
 
 		private GraphicsDeviceManager _graphics;
 
@@ -71,6 +71,7 @@ namespace SampleServer
 
 		protected override void UnloadContent()
 		{
+			
 		}
 
 		protected override void Update( GameTime gameTime )
@@ -98,6 +99,7 @@ namespace SampleServer
 
 				foreach( var character in _characters.Values )
 				{
+					character.UpdateSnapshotHistory();
 					this.BroadcastCharacterState( character );
 				}
 			}
@@ -142,11 +144,14 @@ namespace SampleServer
 			var type = (Packet.Type)reader.ReadUInt32();
 			switch( type )
 			{
-				case Packet.Type.Login:
+				case Packet.Type.CS_Login:
 					this.ProcessLogin( reader, connection );
 					break;
-				case Packet.Type.CommitCharacterInput:
+				case Packet.Type.CS_CommitCharacterInput:
 					this.ProcessCommitCharacterInput( reader, connection );
+					break;
+				case Packet.Type.CS_AttackCharacter:
+					this.ProcessAttackCharacter( reader, connection );
 					break;
 				default:
 					throw new Exception();
@@ -224,6 +229,33 @@ namespace SampleServer
 			character.CurrentDirection = packet.Direction;
 
 			character.Simulate( ClientFrameInterval );
+		}
+
+		private void ProcessAttackCharacter( BinaryReader reader, AgnConnection connection )
+		{
+			Character attacker = null;
+			if( _clients.TryGetValue( connection, out attacker ) == false )
+			{
+				return;
+			}
+
+			this.ResolveAttack( attacker );
+		}
+
+		private void ResolveAttack( Character attacker )
+		{
+			/*
+			foreach( var character in _characters.Values )
+			{
+				if( attacker == character )
+				{
+					continue;
+				}
+
+				CharacterSnapshot previousSnapshot = null;
+				CharacterSnapshot nextSnapshot = null;
+			}
+			*/
 		}
 
 		private void BroadcastCharacterState( Character character )

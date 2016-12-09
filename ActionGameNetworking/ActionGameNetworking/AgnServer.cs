@@ -66,9 +66,9 @@ namespace ActionGameNetworking
 			}
 		}
 
-		public override void Update( TimeSpan elapsedTime )
+		public override void Update()
 		{
-			base.Update( elapsedTime );
+			base.Update();
 			
 			var connectionsToRemove = new List<AgnConnection>();
 

@@ -28,6 +28,8 @@ namespace SampleCommon
 
 		private Texture2D _texture;
 
+		private SpriteFont _font;
+
 		public Character( int id, bool isHost, Vector2 initialPosition, Color color )
 		{
 			this.Id = id;
@@ -41,6 +43,7 @@ namespace SampleCommon
 		public void Load( ContentManager content )
 		{
 			_texture = content.Load<Texture2D>( "Heal" );
+			_font = content.Load<SpriteFont>( "Arial" );
 		}
 
 		public void Simulate( float elapsedTime )
@@ -86,7 +89,14 @@ namespace SampleCommon
 
 		public void Draw( SpriteBatch spriteBatch )
 		{
-			spriteBatch.Draw( _texture, this.Position, this.Color );
+			var size = _texture.Bounds.Size.ToVector2();
+			var location = this.Position - size / 2.0f;
+			spriteBatch.Draw( _texture, location, this.Color );
+
+			var text = string.Format( "{0:0}\n{1:0}", this.Position.X, this.Position.Y );
+			var textSize = _font.MeasureString( text );
+			var textLocation = this.Position - textSize / 2.0f;
+			spriteBatch.DrawString( _font, text, textLocation, Color.White );
 		}
     }
 }

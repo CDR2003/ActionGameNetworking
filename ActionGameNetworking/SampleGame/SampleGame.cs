@@ -111,24 +111,25 @@ namespace SampleGame
 				}
 			}
 
-			if( _hostCharacter != null )
-			{
-				_hostCharacter.UpdateInput();
-			}
-
 			_currentTime += gameTime.ElapsedGameTime;
 			if( _currentTime.TotalSeconds > FrameInterval )
 			{
 				_currentTime = TimeSpan.Zero;
+
+				_client.Update();
+
+				if( _hostCharacter != null )
+				{
+					_hostCharacter.UpdateInput();
+				}
+
+				foreach( var character in _characters.Values )
+				{
+					character.Simulate( FrameInterval );
+				}
+
 				this.CommitHostCharacter();
 			}
-
-			foreach( var character in _characters.Values )
-			{
-				character.Simulate( (float)gameTime.ElapsedGameTime.TotalSeconds );
-			}
-
-			_client.Update( gameTime.ElapsedGameTime );
 
 			base.Update( gameTime );
 		}
@@ -177,8 +178,7 @@ namespace SampleGame
 
 		private void ProcessCreateCharacter( BinaryReader reader )
 		{
-			var packet = new CreateCharacterPacket();
-			packet.ReadFromStream( reader );
+			var packet = Packet.Receive<CreateCharacterPacket>( reader );
 
 			var character = new Character( packet.Id, packet.IsHost, packet.Position, packet.Color );
 			character.Load( this.Content );
@@ -192,16 +192,14 @@ namespace SampleGame
 
 		private void ProcessDestroyCharacter( BinaryReader reader )
 		{
-			var packet = new DestroyCharacterPacket();
-			packet.ReadFromStream( reader );
+			var packet = Packet.Receive<DestroyCharacterPacket>( reader );
 
 			_characters.Remove( packet.Id );
 		}
 
 		private void ProcessUpdateCharacterState( BinaryReader reader )
 		{
-			var packet = new UpdateCharacterStatePacket();
-			packet.ReadFromStream( reader );
+			var packet = Packet.Receive<UpdateCharacterStatePacket>( reader );
 
 			Character character = null;
 			if( _characters.TryGetValue( packet.Id, out character ) == false )
@@ -237,10 +235,12 @@ namespace SampleGame
 			
 			_previousInputPackets.RemoveRange( 0, index + 1 );
 
+			/*
 			if( Vector2.Distance( clientPosition, _hostCharacter.Position ) < MaxLagDistance )
 			{
 				_hostCharacter.Position = clientPosition;
 			}
+			*/
 		}
 	}
 }

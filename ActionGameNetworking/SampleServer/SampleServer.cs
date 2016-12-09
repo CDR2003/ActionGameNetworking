@@ -17,6 +17,8 @@ namespace SampleServer
 	/// </summary>
 	public class SampleServer : Game
 	{
+		public const float ClientFrameInterval = 1.0f / 60.0f;
+
 		public const float FrameInterval = 1.0f / 20.0f;
 
 		private GraphicsDeviceManager _graphics;
@@ -92,20 +94,14 @@ namespace SampleServer
 			{
 				_currentTime = TimeSpan.Zero;
 
+				_server.Update();
+
 				foreach( var character in _characters.Values )
 				{
 					this.BroadcastCharacterState( character );
 				}
-
-				foreach( var character in _characters.Values )
-				{
-					character.Simulate( FrameInterval );
-				}
 			}
-
-			//_server.LatencySimulation = _random.NextFloat( 0.05f, 0.2f );
-			_server.Update( gameTime.ElapsedGameTime );
-
+			
 			base.Update( gameTime );
 		}
 
@@ -216,8 +212,7 @@ namespace SampleServer
 
 		private void ProcessCommitCharacterInput( BinaryReader reader, AgnConnection connection )
 		{
-			var packet = new CommitCharacterInputPacket();
-			packet.ReadFromStream( reader );
+			var packet = Packet.Receive<CommitCharacterInputPacket>( reader );
 
 			Character character = null;
 			if( _clients.TryGetValue( connection, out character ) == false )
@@ -227,6 +222,8 @@ namespace SampleServer
 
 			character.CurrentInputId = packet.InputId;
 			character.CurrentDirection = packet.Direction;
+
+			character.Simulate( ClientFrameInterval );
 		}
 
 		private void BroadcastCharacterState( Character character )

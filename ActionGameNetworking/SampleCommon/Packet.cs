@@ -21,6 +21,13 @@ namespace SampleCommon
 
 		public abstract Type PacketType { get; }
 
+		public static TPacket Receive<TPacket>( BinaryReader reader ) where TPacket : Packet, new()
+		{
+			var packet = new TPacket();
+			packet.ReadFromStream( reader );
+			return packet;
+		}
+
 		public void Send( AgnConnection connection )
 		{
 			var data = this.CreatePacketData();

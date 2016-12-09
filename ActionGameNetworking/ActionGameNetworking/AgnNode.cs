@@ -49,7 +49,7 @@ namespace ActionGameNetworking
 			this.Dispose();
 		}
 
-		public virtual void Update( TimeSpan elapsedTime )
+		public virtual void Update()
 		{
 			this.ReceiveData();
 			this.SendLaggedBuffers();

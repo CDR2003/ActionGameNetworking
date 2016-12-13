@@ -1,4 +1,5 @@
-﻿using Microsoft.Xna.Framework;
+﻿using C3.XNA;
+using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Content;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
@@ -16,9 +17,17 @@ namespace SampleCommon
 
 		public const float HurtFadeOutTime = 1.0f;
 
+		public const float HealthBarHeight = 10.0f;
+
+		public const float HealthBarOffset = 10.0f;
+
 		public static bool DrawGhosts { get; set; }
 
 		public float Speed { get; set; }
+
+		public int CurrentHealth { get; set; }
+
+		public int MaxHealth { get; private set; }
 
 		public int Id { get; private set; }
 
@@ -65,6 +74,8 @@ namespace SampleCommon
 			this.Position = initialPosition;
 			this.Color = color;
 			this.Speed = 200.0f;
+			this.MaxHealth = 100;
+			this.CurrentHealth = this.MaxHealth;
 			this.CurrentInputId = 0;
 			this.History = new SnapshotHistory<CharacterSnapshot>();
 			this.InterpolationGhosts = new List<CharacterSnapshot>();
@@ -170,6 +181,13 @@ namespace SampleCommon
 			var textSize = _font.MeasureString( text );
 			var textLocation = this.Position - textSize / 2.0f;
 			spriteBatch.DrawString( _font, text, textLocation, Color.White );
+
+			var healthBarPosition = this.Position - this.Size / 2.0f - new Vector2( 0.0f, HealthBarOffset + HealthBarHeight / 2.0f );
+			var healthBarWidth = this.Size.X;
+			spriteBatch.DrawLine( healthBarPosition, healthBarPosition + new Vector2( healthBarWidth, 0.0f ), Color.Black, HealthBarHeight );
+
+			var currentHealthWidth = healthBarWidth * this.CurrentHealth / this.MaxHealth;
+			spriteBatch.DrawLine( healthBarPosition, healthBarPosition + new Vector2( currentHealthWidth, 0.0f ), Color.SpringGreen, HealthBarHeight );
 		}
 
 		public void UpdateSnapshotHistory()

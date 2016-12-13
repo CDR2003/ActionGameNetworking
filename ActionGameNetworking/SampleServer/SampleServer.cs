@@ -280,9 +280,16 @@ namespace SampleServer
 			{
 				minCharacter.Hurt();
 
+				minCharacter.CurrentHealth -= BulletLine.Damage;
+				if( minCharacter.CurrentHealth <= 0 )
+				{
+					minCharacter.CurrentHealth = minCharacter.MaxHealth;
+				}
+
 				var hurtPacket = new HurtPacket();
 				hurtPacket.AttackerId = attacker.Id;
 				hurtPacket.VictimId = minCharacter.Id;
+				hurtPacket.VictimHealth = minCharacter.CurrentHealth;
 				hurtPacket.Broadcast( _server );
 			}
 		}

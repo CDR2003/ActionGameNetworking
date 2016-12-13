@@ -280,6 +280,8 @@ namespace SampleGame
 			{
 				character.Hurt();
 			}
+
+			character.CurrentHealth = packet.VictimHealth;
 		}
 
 		private void ProcessUpdateCharacterState( BinaryReader reader )

@@ -16,6 +16,8 @@ namespace SampleCommon
 
 		public const float FadeOutTime = 0.1f;
 
+		public const int Damage = 10;
+
 		private float _currentTime;
 
 		private Vector2 _direction;

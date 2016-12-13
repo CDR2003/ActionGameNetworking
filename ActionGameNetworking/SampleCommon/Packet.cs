@@ -19,6 +19,8 @@ namespace SampleCommon
 			SC_CreateCharacter,
 			SC_DestroyCharacter,
 			SC_UpdateCharacterState,
+			SC_Shoot,
+			SC_Hurt,
 		}
 
 		public abstract Type PacketType { get; }
@@ -40,6 +42,12 @@ namespace SampleCommon
 		{
 			var data = this.CreatePacketData();
 			server.Broadcast( data.GetBuffer(), (int)data.Length );
+		}
+
+		public void Broadcast( AgnServer server, AgnConnection except )
+		{
+			var data = this.CreatePacketData();
+			server.Broadcast( data.GetBuffer(), (int)data.Length, except );
 		}
 
 		public abstract void ReadFromStream( BinaryReader reader );

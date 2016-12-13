@@ -37,6 +37,8 @@ namespace SampleGame
 
 		private List<CommitCharacterInputPacket> _previousInputPackets;
 
+		private ButtonState _previousMouseState = ButtonState.Released;
+
 		public SampleGame()
 		{
 			_graphics = new GraphicsDeviceManager( this );
@@ -75,6 +77,12 @@ namespace SampleGame
 					break;
 				case Packet.Type.SC_DestroyCharacter:
 					this.ProcessDestroyCharacter( reader );
+					break;
+				case Packet.Type.SC_Shoot:
+					this.ProcessShoot( reader );
+					break;
+				case Packet.Type.SC_Hurt:
+					this.ProcessHurt( reader );
 					break;
 				default:
 					throw new Exception();
@@ -136,8 +144,12 @@ namespace SampleGame
 					this.InterpolateCharacter( character );
 				}
 
+				this.UpdateShooting();
+
 				this.CommitHostCharacter();
 			}
+
+			SceneManager.Instance.Update( gameTime );
 
 			base.Update( gameTime );
 		}
@@ -156,15 +168,43 @@ namespace SampleGame
 
 			_spriteBatch.Begin();
 
-			foreach( var character in _characters.Values )
-			{
-				character.Draw( _spriteBatch );
-			}
+			SceneManager.Instance.Draw( _spriteBatch );
 
 			_spriteBatch.DrawString( _font, sb.ToString(), Vector2.Zero, this.IsActive ? Color.White : Color.LightGray );
 			_spriteBatch.End();
 
 			base.Draw( gameTime );
+		}
+
+		private void UpdateShooting()
+		{
+			var buttonState = Mouse.GetState().LeftButton;
+			if( buttonState == _previousMouseState || _previousMouseState == ButtonState.Pressed )
+			{
+				_previousMouseState = buttonState;
+				return;
+			}
+
+			_previousMouseState = buttonState;
+
+			if( _hostCharacter == null )
+			{
+				return;
+			}
+
+			if( this.IsActive == false )
+			{
+				return;
+			}
+
+			var mousePosition = Mouse.GetState().Position.ToVector2();
+			var direction = Vector2.Normalize( mousePosition - _hostCharacter.Position );
+			var line = new BulletLine( direction );
+			line.Position = _hostCharacter.Position;
+
+			var packet = new AttackCharacterPacket();
+			packet.Direction = direction;
+			packet.Send( _client.Connection );
 		}
 
 		private void CommitHostCharacter()
@@ -202,7 +242,35 @@ namespace SampleGame
 		{
 			var packet = Packet.Receive<DestroyCharacterPacket>( reader );
 
+			Character character = null;
+			if( _characters.TryGetValue( packet.Id, out character ) == false )
+			{
+				throw new Exception();
+			}
+
+			SceneObject.Destroy( character );
 			_characters.Remove( packet.Id );
+		}
+
+		private void ProcessShoot( BinaryReader reader )
+		{
+			var packet = Packet.Receive<ShootPacket>( reader );
+
+			var bulletLine = new BulletLine( packet.BulletDirection );
+			bulletLine.Position = packet.BulletOrigin;
+		}
+
+		private void ProcessHurt( BinaryReader reader )
+		{
+			var packet = Packet.Receive<HurtPacket>( reader );
+			
+			Character character = null;
+			if( _characters.TryGetValue( packet.VictimId, out character ) == false )
+			{
+				throw new Exception();
+			}
+
+			character.Hurt();
 		}
 
 		private void ProcessUpdateCharacterState( BinaryReader reader )
@@ -223,6 +291,8 @@ namespace SampleGame
 			}
 			else
 			{
+				character.CurrentDirection = packet.Direction;
+				character.Position = packet.Position;
 				var snapshot = new CharacterSnapshot( packet.Position, packet.Direction );
 				character.History.AddSnapshot( snapshot );
 			}

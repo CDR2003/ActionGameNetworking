@@ -43,13 +43,19 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AttackCharacterPacket.cs" />
+    <Compile Include="BulletLine.cs" />
     <Compile Include="Character.cs" />
     <Compile Include="CharacterSnapshot.cs" />
     <Compile Include="CommitCharacterInputPacket.cs" />
     <Compile Include="CreateCharacterPacket.cs" />
     <Compile Include="DestroyCharacterPacket.cs" />
     <Compile Include="Extensions.cs" />
+    <Compile Include="HurtPacket.cs" />
     <Compile Include="LoginPacket.cs" />
+    <Compile Include="Primitives2D.cs" />
+    <Compile Include="SceneManager.cs" />
+    <Compile Include="SceneObject.cs" />
+    <Compile Include="ShootPacket.cs" />
     <Compile Include="Snapshot.cs" />
     <Compile Include="Packet.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

@@ -8,26 +8,30 @@ using System.Threading.Tasks;
 
 namespace SampleCommon
 {
-	public class AttackCharacterPacket : Packet
+	public class ShootPacket : Packet
 	{
 		public override Type PacketType
 		{
 			get
 			{
-				return Type.CS_AttackCharacter;
+				return Type.SC_Shoot;
 			}
 		}
 
-		public Vector2 Direction { get; set; }
+		public Vector2 BulletOrigin { get; set; }
+
+		public Vector2 BulletDirection { get; set; }
 
 		public override void ReadFromStream( BinaryReader reader )
 		{
-			this.Direction = reader.ReadVector2();
+			this.BulletOrigin = reader.ReadVector2();
+			this.BulletDirection = reader.ReadVector2();
 		}
 
 		public override void WriteToStream( BinaryWriter writer )
 		{
-			writer.Write( this.Direction );
+			writer.Write( this.BulletOrigin );
+			writer.Write( this.BulletDirection );
 		}
 	}
 }

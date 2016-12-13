@@ -103,6 +103,8 @@ namespace SampleServer
 					this.BroadcastCharacterState( character );
 				}
 			}
+
+			SceneManager.Instance.Update( gameTime );
 			
 			base.Update( gameTime );
 		}
@@ -128,10 +130,7 @@ namespace SampleServer
 
 			_spriteBatch.Begin();
 
-			foreach( var character in _characters.Values )
-			{
-				character.Draw( _spriteBatch );
-			}
+			SceneManager.Instance.Draw( _spriteBatch );
 
 			_spriteBatch.DrawString( _font, sb.ToString(), Vector2.Zero, this.IsActive ? Color.White : Color.LightGray );
 			_spriteBatch.End();
@@ -168,6 +167,7 @@ namespace SampleServer
 
 			_clients.Remove( connection );
 			_characters.Remove( character.Id );
+			SceneObject.Destroy( character );
 
 			var packet = new DestroyCharacterPacket();
 			packet.Id = character.Id;
@@ -233,18 +233,27 @@ namespace SampleServer
 
 		private void ProcessAttackCharacter( BinaryReader reader, AgnConnection connection )
 		{
+			var packet = Packet.Receive<AttackCharacterPacket>( reader );
+
 			Character attacker = null;
 			if( _clients.TryGetValue( connection, out attacker ) == false )
 			{
 				return;
 			}
 
-			this.ResolveAttack( attacker );
-		}
+			var bulletLine = new BulletLine( packet.Direction );
+			bulletLine.Position = attacker.Position;
 
-		private void ResolveAttack( Character attacker )
-		{
-			/*
+			var shootPacket = new ShootPacket();
+			shootPacket.BulletOrigin = attacker.Position;
+			shootPacket.BulletDirection = packet.Direction;
+			shootPacket.Broadcast( _server, connection );
+
+			var rtt = TimeSpan.FromSeconds( connection.CurrentRtt );
+			var past = DateTime.Now - Character.InterpolationInterval - rtt;
+
+			Character minCharacter = null;
+			var minDistance = float.MaxValue;
 			foreach( var character in _characters.Values )
 			{
 				if( attacker == character )
@@ -254,8 +263,27 @@ namespace SampleServer
 
 				CharacterSnapshot previousSnapshot = null;
 				CharacterSnapshot nextSnapshot = null;
+				if( character.History.TryFindSnapshots( past, out previousSnapshot, out nextSnapshot ) == false )
+				{
+					continue;
+				}
+
+				var distance = bulletLine.Hit( previousSnapshot.Position, character.Radius );
+				if( distance != null && distance.Value < minDistance )
+				{
+					minDistance = distance.Value;
+					minCharacter = character;
+				}
 			}
-			*/
+
+			if( minCharacter != null )
+			{
+				minCharacter.Hurt();
+
+				var hurtPacket = new HurtPacket();
+				hurtPacket.VictimId = minCharacter.Id;
+				hurtPacket.Broadcast( _server );
+			}
 		}
 
 		private void BroadcastCharacterState( Character character )

@@ -48,20 +48,24 @@ namespace ActionGameNetworking
 			this.Socket.Bind( new IPEndPoint( IPAddress.Any, this.Port ) );
 		}
 
-		public void Broadcast( byte[] buffer )
+		public void Broadcast( byte[] buffer, AgnConnection except = null )
 		{
-			this.Broadcast( buffer, 0, buffer.Length );
+			this.Broadcast( buffer, 0, buffer.Length, except );
 		}
 
-		public void Broadcast( byte[] buffer, int size )
+		public void Broadcast( byte[] buffer, int size, AgnConnection except = null )
 		{
-			this.Broadcast( buffer, 0, size );
+			this.Broadcast( buffer, 0, size, except );
 		}
 
-		public void Broadcast( byte[] buffer, int offset, int size )
+		public void Broadcast( byte[] buffer, int offset, int size, AgnConnection except = null )
 		{
 			foreach( var connection in this.Connections )
 			{
+				if( except == connection )
+				{
+					continue;
+				}
 				connection.SendTo( buffer, offset, size );
 			}
 		}

@@ -8,26 +8,26 @@ using System.Threading.Tasks;
 
 namespace SampleCommon
 {
-	public class AttackCharacterPacket : Packet
+	public class HurtPacket : Packet
 	{
 		public override Type PacketType
 		{
 			get
 			{
-				return Type.CS_AttackCharacter;
+				return Type.SC_Hurt;
 			}
 		}
 
-		public Vector2 Direction { get; set; }
+		public int VictimId { get; set; }
 
 		public override void ReadFromStream( BinaryReader reader )
 		{
-			this.Direction = reader.ReadVector2();
+			this.VictimId = reader.ReadInt32();
 		}
 
 		public override void WriteToStream( BinaryWriter writer )
 		{
-			writer.Write( this.Direction );
+			writer.Write( this.VictimId );
 		}
 	}
 }

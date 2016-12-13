@@ -64,7 +64,7 @@ namespace SampleCommon
 			this.IsHost = isHost;
 			this.Position = initialPosition;
 			this.Color = color;
-			this.Speed = 500.0f;
+			this.Speed = 200.0f;
 			this.CurrentInputId = 0;
 			this.History = new SnapshotHistory<CharacterSnapshot>();
 			this.InterpolationGhosts = new List<CharacterSnapshot>();

@@ -202,6 +202,12 @@ namespace SampleGame
 			var line = new BulletLine( direction );
 			line.Position = _hostCharacter.Position;
 
+			var victim = line.Shoot( _hostCharacter );
+			if( victim != null )
+			{
+				victim.Hurt();
+			}
+
 			var packet = new AttackCharacterPacket();
 			packet.Direction = direction;
 			packet.Send( _client.Connection );
@@ -270,7 +276,7 @@ namespace SampleGame
 				throw new Exception();
 			}
 
-			character.Hurt();
+			//character.Hurt();
 		}
 
 		private void ProcessUpdateCharacterState( BinaryReader reader )
@@ -298,14 +304,9 @@ namespace SampleGame
 			}
 		}
 
-		private DateTime _lastPastTime = DateTime.Now;
-
 		private void InterpolateCharacter( Character character )
 		{
 			var pastTime = DateTime.Now - Character.InterpolationInterval;
-			Debug.Assert( pastTime >= _lastPastTime );
-
-			_lastPastTime = pastTime;
 
 			CharacterSnapshot previousSnapshot = null;
 			CharacterSnapshot nextSnapshot = null;

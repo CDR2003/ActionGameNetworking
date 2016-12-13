@@ -26,14 +26,14 @@ namespace SampleCommon
 			_direction = direction;
 		}
 
-		public Character Shoot()
+		public Character Shoot( Character shooter )
 		{
 			Character minCharacter = null;
 			var minDistance = float.MaxValue;
 			foreach( var obj in SceneManager.Instance.Objects )
 			{
 				var character = obj as Character;
-				if( character == null )
+				if( character == null || character == shooter )
 				{
 					continue;
 				}

@@ -39,6 +39,8 @@ namespace SampleGame
 
 		private ButtonState _previousMouseState = ButtonState.Released;
 
+		private float _currentShootTime = BulletLine.ShootInterval;
+
 		public SampleGame()
 		{
 			_graphics = new GraphicsDeviceManager( this );
@@ -144,7 +146,7 @@ namespace SampleGame
 					this.InterpolateCharacter( character );
 				}
 
-				this.UpdateShooting();
+				this.UpdateShooting( gameTime );
 
 				this.CommitHostCharacter();
 			}
@@ -176,8 +178,10 @@ namespace SampleGame
 			base.Draw( gameTime );
 		}
 
-		private void UpdateShooting()
+		private void UpdateShooting( GameTime gameTime )
 		{
+			_currentShootTime += (float)gameTime.ElapsedGameTime.TotalSeconds;
+
 			var buttonState = Mouse.GetState().LeftButton;
 			if( buttonState == _previousMouseState || _previousMouseState == ButtonState.Pressed )
 			{
@@ -196,6 +200,13 @@ namespace SampleGame
 			{
 				return;
 			}
+
+			if( _currentShootTime < BulletLine.ShootInterval )
+			{
+				return;
+			}
+
+			_currentShootTime = 0.0f;
 
 			var mousePosition = Mouse.GetState().Position.ToVector2();
 			var direction = Vector2.Normalize( mousePosition - _hostCharacter.Position );

@@ -18,6 +18,8 @@ namespace SampleCommon
 
 		public const int Damage = 10;
 
+		public const float ShootInterval = 0.5f;
+
 		private float _currentTime;
 
 		private Vector2 _direction;

@@ -14,7 +14,7 @@ namespace SampleCommon
 	{
 		public const float Length = 1000.0f;
 
-		public const float FadeOutTime = 0.1f;
+		public const float StayTime = 0.1f;
 
 		public const int Damage = 10;
 
@@ -61,17 +61,13 @@ namespace SampleCommon
 		public override void Draw( SpriteBatch spriteBatch )
 		{
 			var targetPosition = this.Position + _direction * Length;
-			var alpha = 1.0f - _currentTime / FadeOutTime;
-			var color = Color.Yellow;
-			color.R = (byte)( alpha * 255 );
-			color.G = (byte)( alpha * 255 );
-			spriteBatch.DrawLine( this.Position, this.Position + _direction * Length, color );
+			spriteBatch.DrawLine( this.Position, this.Position + _direction * Length, Color.Yellow );
 		}
 
 		public override void Update( GameTime gameTime )
 		{
 			_currentTime += (float)gameTime.ElapsedGameTime.TotalSeconds;
-			if( _currentTime > FadeOutTime )
+			if( _currentTime > StayTime )
 			{
 				SceneObject.Destroy( this );
 			}

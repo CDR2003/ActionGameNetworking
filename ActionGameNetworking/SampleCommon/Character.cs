@@ -15,7 +15,7 @@ namespace SampleCommon
     {
 		public static readonly TimeSpan InterpolationInterval = new TimeSpan( 0, 0, 0, 0, 100 );
 
-		public const float HurtFadeOutTime = 1.0f;
+		public const float HurtStayTime = 0.2f;
 
 		public const float HealthBarHeight = 10.0f;
 
@@ -105,11 +105,10 @@ namespace SampleCommon
 			}
 
 			_currentTime += (float)gameTime.ElapsedGameTime.TotalSeconds;
-			if( _currentTime > HurtFadeOutTime )
+			if( _currentTime > HurtStayTime )
 			{
 				_currentTime = 0.0f;
 				_hurting = false;
-
 			}
 		}
 
@@ -160,12 +159,7 @@ namespace SampleCommon
 				}
 			}
 
-			var color = Color.DimGray;
-			if( _hurting )
-			{
-				color = new Color( Vector3.Lerp( Color.Red.ToVector3(), Color.DimGray.ToVector3(), _currentTime / HurtFadeOutTime ) );
-			}
-
+			var color = _hurting ? Color.Red : Color.Black;
 			var outerLocation = this.Position - this.Size / 2.0f;
 			spriteBatch.Draw( _texture, outerLocation, this.IsHost ? Color.White : color );
 

@@ -281,6 +281,7 @@ namespace SampleServer
 				minCharacter.Hurt();
 
 				var hurtPacket = new HurtPacket();
+				hurtPacket.AttackerId = attacker.Id;
 				hurtPacket.VictimId = minCharacter.Id;
 				hurtPacket.Broadcast( _server );
 			}

@@ -14,7 +14,7 @@ namespace SampleCommon
 	{
 		public const float Length = 1000.0f;
 
-		public const float FadeOutTime = 1.0f;
+		public const float FadeOutTime = 0.1f;
 
 		private float _currentTime;
 

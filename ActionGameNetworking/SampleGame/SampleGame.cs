@@ -276,7 +276,10 @@ namespace SampleGame
 				throw new Exception();
 			}
 
-			//character.Hurt();
+			if( packet.AttackerId != _hostCharacter.Id )
+			{
+				character.Hurt();
+			}
 		}
 
 		private void ProcessUpdateCharacterState( BinaryReader reader )

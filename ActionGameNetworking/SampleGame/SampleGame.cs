@@ -17,6 +17,15 @@ namespace SampleGame
 	/// </summary>
 	public class SampleGame : Game
 	{
+		public enum BulletType
+		{
+			Immediate,
+			Fast,
+			Slow
+		}
+
+		public BulletType CurrentBulletType = BulletType.Fast;
+
 		public const float FrameInterval = 1.0f / 60.0f;
 
 		private GraphicsDeviceManager _graphics;
@@ -37,9 +46,13 @@ namespace SampleGame
 
 		private List<CommitCharacterInputPacket> _previousInputPackets;
 
-		private ButtonState _previousMouseState = ButtonState.Released;
-
 		private float _currentShootTime = BulletLine.ShootInterval;
+
+		private int _currentBulletId = 0;
+
+		private Dictionary<int, FastBullet> _bullets = new Dictionary<int, FastBullet>();
+
+		private Dictionary<int, FastBullet> _localBullets = new Dictionary<int, FastBullet>();
 
 		public SampleGame()
 		{
@@ -80,11 +93,20 @@ namespace SampleGame
 				case Packet.Type.SC_DestroyCharacter:
 					this.ProcessDestroyCharacter( reader );
 					break;
-				case Packet.Type.SC_Shoot:
-					this.ProcessShoot( reader );
+				case Packet.Type.SC_CreateImmediateBullet:
+					this.ProcessCreateImmediateBullet( reader );
 					break;
-				case Packet.Type.SC_Hurt:
-					this.ProcessHurt( reader );
+				case Packet.Type.SC_CreateFastBullet:
+					this.ProcessCreateFastBullet( reader );
+					break;
+				case Packet.Type.SC_DestroyFastBullet:
+					this.ProcessDestroyFastBullet( reader );
+					break;
+				case Packet.Type.SC_HurtByImmediateBullet:
+					this.ProcessHurtByImmediateBullet( reader );
+					break;
+				case Packet.Type.SC_HurtByFastBullet:
+					this.ProcessHurtByFastBullet( reader );
 					break;
 				default:
 					throw new Exception();
@@ -146,7 +168,25 @@ namespace SampleGame
 					this.InterpolateCharacter( character );
 				}
 
-				this.UpdateShooting( gameTime );
+				this.UpdateShooting( FrameInterval );
+				
+				foreach( var bullet in _bullets.Values )
+				{
+					bullet.Simulate( FrameInterval );
+					if( this.CheckBulletHit( bullet ) )
+					{
+						bullet.Visible = false;
+					}
+				}
+
+				foreach( var bullet in _localBullets.Values )
+				{
+					bullet.Simulate( FrameInterval );
+					if( this.CheckBulletHit( bullet ) )
+					{
+						bullet.Visible = false;
+					}
+				}
 
 				this.CommitHostCharacter();
 			}
@@ -178,18 +218,15 @@ namespace SampleGame
 			base.Draw( gameTime );
 		}
 
-		private void UpdateShooting( GameTime gameTime )
+		private void UpdateShooting( float elapsedTime )
 		{
-			_currentShootTime += (float)gameTime.ElapsedGameTime.TotalSeconds;
+			_currentShootTime += elapsedTime;
 
 			var buttonState = Mouse.GetState().LeftButton;
-			if( buttonState == _previousMouseState || _previousMouseState == ButtonState.Pressed )
+			if( buttonState == ButtonState.Released )
 			{
-				_previousMouseState = buttonState;
 				return;
 			}
-
-			_previousMouseState = buttonState;
 
 			if( _hostCharacter == null )
 			{
@@ -210,6 +247,24 @@ namespace SampleGame
 
 			var mousePosition = Mouse.GetState().Position.ToVector2();
 			var direction = Vector2.Normalize( mousePosition - _hostCharacter.Position );
+
+			switch( this.CurrentBulletType )
+			{
+				case BulletType.Immediate:
+					this.ShootImmediateBullet( direction );
+					break;
+				case BulletType.Fast:
+					this.ShootFastBullet( direction );
+					break;
+				case BulletType.Slow:
+					break;
+				default:
+					break;
+			}
+		}
+
+		private void ShootImmediateBullet( Vector2 direction )
+		{
 			var line = new BulletLine( direction );
 			line.Position = _hostCharacter.Position;
 
@@ -219,8 +274,24 @@ namespace SampleGame
 				victim.Hurt();
 			}
 
-			var packet = new AttackCharacterPacket();
+			var packet = new ShootImmediateBulletPacket();
 			packet.Direction = direction;
+			packet.Send( _client.Connection );
+		}
+
+		private void ShootFastBullet( Vector2 direction )
+		{
+			_currentBulletId++;
+
+			var bullet = new FastBullet( _currentBulletId, _hostCharacter );
+			bullet.Load( this.Content );
+			bullet.Position = _hostCharacter.Position;
+			bullet.Direction = direction;
+			_localBullets.Add( bullet.Id, bullet );
+
+			var packet = new ShootFastBulletPacket();
+			packet.LocalId = bullet.Id;
+			packet.Direction = bullet.Direction;
 			packet.Send( _client.Connection );
 		}
 
@@ -269,18 +340,61 @@ namespace SampleGame
 			_characters.Remove( packet.Id );
 		}
 
-		private void ProcessShoot( BinaryReader reader )
+		private void ProcessCreateImmediateBullet( BinaryReader reader )
 		{
-			var packet = Packet.Receive<ShootPacket>( reader );
+			var packet = Packet.Receive<CreateImmediateBulletPacket>( reader );
 
 			var bulletLine = new BulletLine( packet.BulletDirection );
 			bulletLine.Position = packet.BulletOrigin;
 		}
 
-		private void ProcessHurt( BinaryReader reader )
+		private void ProcessCreateFastBullet( BinaryReader reader )
 		{
-			var packet = Packet.Receive<HurtPacket>( reader );
-			
+			var packet = Packet.Receive<CreateFastBulletPacket>( reader );
+
+			Character shooter = null;
+			if( _characters.TryGetValue( packet.ShooterId, out shooter ) == false )
+			{
+				throw new Exception();
+			}
+
+			if( shooter == _hostCharacter )
+			{
+				var bullet = _localBullets[packet.LocalId];
+				_localBullets.Remove( packet.LocalId );
+
+				bullet.Id = packet.RemoteId;
+
+				_bullets.Add( bullet.Id, bullet );
+			}
+			else
+			{
+				var bullet = new FastBullet( packet.RemoteId, shooter );
+				bullet.Load( this.Content );
+				bullet.Position = packet.Position;
+				bullet.Direction = packet.Direction;
+				_bullets.Add( bullet.Id, bullet );
+			}
+		}
+
+		private void ProcessDestroyFastBullet( BinaryReader reader )
+		{
+			var packet = Packet.Receive<DestroyFastBulletPacket>( reader );
+
+			FastBullet bullet = null;
+			if( _bullets.TryGetValue( packet.BulletId, out bullet ) == false )
+			{
+				throw new Exception();
+			}
+
+			SceneObject.Destroy( bullet );
+			_bullets.Remove( bullet.Id );
+		}
+
+		private void ProcessHurtByImmediateBullet( BinaryReader reader )
+		{
+			var packet = Packet.Receive<HurtByImmediateBulletPacket>( reader );
+
 			Character character = null;
 			if( _characters.TryGetValue( packet.VictimId, out character ) == false )
 			{
@@ -293,6 +407,29 @@ namespace SampleGame
 			}
 
 			character.CurrentHealth = packet.VictimHealth;
+		}
+
+		private void ProcessHurtByFastBullet( BinaryReader reader )
+		{
+			var packet = Packet.Receive<HurtByFastBulletPacket>( reader );
+
+			Character victim = null;
+			if( _characters.TryGetValue( packet.VictimId, out victim ) == false )
+			{
+				throw new Exception();
+			}
+
+			FastBullet bullet = null;
+			if( _bullets.TryGetValue( packet.BulletId, out bullet ) == false )
+			{
+				throw new Exception();
+			}
+
+			SceneObject.Destroy( bullet );
+			_bullets.Remove( bullet.Id );
+
+			victim.CurrentHealth = packet.VictimHealth;
+			victim.Hurt();
 		}
 
 		private void ProcessUpdateCharacterState( BinaryReader reader )
@@ -360,6 +497,31 @@ namespace SampleGame
 			}
 
 			_previousInputPackets.RemoveRange( 0, index + 1 );
+		}
+
+		private bool CheckBulletHit( FastBullet bullet )
+		{
+			Character target = null;
+			foreach( var character in _characters.Values )
+			{
+				if( character == bullet.Shooter )
+				{
+					continue;
+				}
+
+				if( Vector2.Distance( character.Position, bullet.Position ) < character.Radius )
+				{
+					target = character;
+					break;
+				}
+			}
+
+			if( target == null )
+			{
+				return false;
+			}
+
+			return true;
 		}
 	}
 }

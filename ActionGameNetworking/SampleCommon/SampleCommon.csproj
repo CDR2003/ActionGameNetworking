@@ -42,7 +42,11 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="AttackCharacterPacket.cs" />
+    <Compile Include="CreateFastBulletPacket.cs" />
+    <Compile Include="DestroyFastBulletPacket.cs" />
+    <Compile Include="HurtByFastBulletPacket.cs" />
+    <Compile Include="ShootFastBulletPacket.cs" />
+    <Compile Include="ShootImmediateBulletPacket.cs" />
     <Compile Include="BulletLine.cs" />
     <Compile Include="Character.cs" />
     <Compile Include="CharacterSnapshot.cs" />
@@ -50,12 +54,13 @@
     <Compile Include="CreateCharacterPacket.cs" />
     <Compile Include="DestroyCharacterPacket.cs" />
     <Compile Include="Extensions.cs" />
-    <Compile Include="HurtPacket.cs" />
+    <Compile Include="FastBullet.cs" />
+    <Compile Include="HurtByImmediateBulletPacket.cs" />
     <Compile Include="LoginPacket.cs" />
     <Compile Include="Primitives2D.cs" />
     <Compile Include="SceneManager.cs" />
     <Compile Include="SceneObject.cs" />
-    <Compile Include="ShootPacket.cs" />
+    <Compile Include="CreateImmediateBulletPacket.cs" />
     <Compile Include="Snapshot.cs" />
     <Compile Include="Packet.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

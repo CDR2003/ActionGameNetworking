@@ -73,7 +73,7 @@ namespace SampleCommon
 			}
 		}
 
-		private static float? Intersects( Vector2 center, float radius, Vector2 origin, Vector2 direction )
+		public static float? Intersects( Vector2 center, float radius, Vector2 origin, Vector2 direction )
 		{
 			var a = direction.LengthSquared();
 			var b = 2.0f * ( Vector2.Dot( origin, direction ) - Vector2.Dot( direction, center ) );

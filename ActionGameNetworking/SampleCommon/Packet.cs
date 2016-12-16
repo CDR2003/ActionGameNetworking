@@ -14,13 +14,17 @@ namespace SampleCommon
 		{
 			CS_Login,
 			CS_CommitCharacterInput,
-			CS_AttackCharacter,
+			CS_ShootImmediateBullet,
+			CS_ShootFastBullet,
 
 			SC_CreateCharacter,
 			SC_DestroyCharacter,
 			SC_UpdateCharacterState,
-			SC_Shoot,
-			SC_Hurt,
+			SC_CreateImmediateBullet,
+			SC_CreateFastBullet,
+			SC_HurtByImmediateBullet,
+			SC_HurtByFastBullet,
+			SC_DestroyFastBullet,
 		}
 
 		public abstract Type PacketType { get; }

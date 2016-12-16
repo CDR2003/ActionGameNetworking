@@ -97,6 +97,15 @@ namespace SampleCommon
 			this.Position += this.CurrentDirection * this.Speed * elapsedTime;
 		}
 
+		public void TakeDamage( int damage )
+		{
+			this.CurrentHealth -= damage;
+			if( this.CurrentHealth <= 0 )
+			{
+				this.CurrentHealth = this.MaxHealth;
+			}
+		}
+
 		public override void Update( GameTime gameTime )
 		{
 			if( _hurting == false )

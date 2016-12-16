@@ -19,7 +19,7 @@ namespace SampleServer
 	{
 		public const float ClientFrameInterval = 1.0f / 60.0f;
 
-		public const float FrameInterval = 1.0f / 10.0f;
+		public const float FrameInterval = 1.0f / 20.0f;
 
 		private GraphicsDeviceManager _graphics;
 
@@ -37,7 +37,11 @@ namespace SampleServer
 
 		private Dictionary<int, Character> _characters;
 
+		private Dictionary<int, FastBullet> _bullets = new Dictionary<int, FastBullet>();
+
 		private int _currentCharacterId;
+
+		private int _currentBulletId = 0;
 
 		public SampleServer()
 		{
@@ -95,6 +99,35 @@ namespace SampleServer
 			{
 				_currentTime = TimeSpan.Zero;
 
+				var bulletsToRemove = new List<int>();
+				foreach( var bullet in _bullets.Values )
+				{
+					var oldPosition = bullet.Position;
+
+					bullet.Simulate( FrameInterval );
+
+					var hit = this.CheckBulletHit( bullet, oldPosition );
+					if( hit )
+					{
+						SceneObject.Destroy( bullet );
+						bulletsToRemove.Add( bullet.Id );
+					}
+					else if( bullet.Position.X < 0.0f || bullet.Position.Y < 0.0f || bullet.Position.X > this.Window.ClientBounds.Width || bullet.Position.Y > this.Window.ClientBounds.Height )
+					{
+						var packet = new DestroyFastBulletPacket();
+						packet.BulletId = bullet.Id;
+						packet.Broadcast( _server );
+
+						SceneObject.Destroy( bullet );
+						bulletsToRemove.Add( bullet.Id );
+					}
+				}
+
+				foreach( var bulletId in bulletsToRemove )
+				{
+					_bullets.Remove( bulletId );
+				}
+
 				_server.Update();
 
 				foreach( var character in _characters.Values )
@@ -149,8 +182,11 @@ namespace SampleServer
 				case Packet.Type.CS_CommitCharacterInput:
 					this.ProcessCommitCharacterInput( reader, connection );
 					break;
-				case Packet.Type.CS_AttackCharacter:
-					this.ProcessAttackCharacter( reader, connection );
+				case Packet.Type.CS_ShootImmediateBullet:
+					this.ProcessShootImmediateBullet( reader, connection );
+					break;
+				case Packet.Type.CS_ShootFastBullet:
+					this.ProcessShootFastBullet( reader, connection );
 					break;
 				default:
 					throw new Exception();
@@ -231,9 +267,9 @@ namespace SampleServer
 			character.Simulate( ClientFrameInterval );
 		}
 
-		private void ProcessAttackCharacter( BinaryReader reader, AgnConnection connection )
+		private void ProcessShootImmediateBullet( BinaryReader reader, AgnConnection connection )
 		{
-			var packet = Packet.Receive<AttackCharacterPacket>( reader );
+			var packet = Packet.Receive<ShootImmediateBulletPacket>( reader );
 
 			Character attacker = null;
 			if( _clients.TryGetValue( connection, out attacker ) == false )
@@ -244,7 +280,7 @@ namespace SampleServer
 			var bulletLine = new BulletLine( packet.Direction );
 			bulletLine.Position = attacker.Position;
 
-			var shootPacket = new ShootPacket();
+			var shootPacket = new CreateImmediateBulletPacket();
 			shootPacket.BulletOrigin = attacker.Position;
 			shootPacket.BulletDirection = packet.Direction;
 			shootPacket.Broadcast( _server, connection );
@@ -279,19 +315,41 @@ namespace SampleServer
 			if( minCharacter != null )
 			{
 				minCharacter.Hurt();
+				minCharacter.TakeDamage( BulletLine.Damage );
 
-				minCharacter.CurrentHealth -= BulletLine.Damage;
-				if( minCharacter.CurrentHealth <= 0 )
-				{
-					minCharacter.CurrentHealth = minCharacter.MaxHealth;
-				}
-
-				var hurtPacket = new HurtPacket();
+				var hurtPacket = new HurtByImmediateBulletPacket();
 				hurtPacket.AttackerId = attacker.Id;
 				hurtPacket.VictimId = minCharacter.Id;
 				hurtPacket.VictimHealth = minCharacter.CurrentHealth;
 				hurtPacket.Broadcast( _server );
 			}
+		}
+
+		private void ProcessShootFastBullet( BinaryReader reader, AgnConnection connection )
+		{
+			var packet = Packet.Receive<ShootFastBulletPacket>( reader );
+
+			Character shooter = null;
+			if( _clients.TryGetValue( connection, out shooter ) == false )
+			{
+				return;
+			}
+
+			_currentBulletId++;
+
+			var bullet = new FastBullet( _currentBulletId, shooter );
+			bullet.Load( this.Content );
+			bullet.Position = shooter.Position;
+			bullet.Direction = packet.Direction;
+			_bullets.Add( bullet.Id, bullet );
+
+			var createBulletPacket = new CreateFastBulletPacket();
+			createBulletPacket.LocalId = packet.LocalId;
+			createBulletPacket.RemoteId = bullet.Id;
+			createBulletPacket.Position = bullet.Position;
+			createBulletPacket.Direction = bullet.Direction;
+			createBulletPacket.ShooterId = shooter.Id;
+			createBulletPacket.Broadcast( _server );
 		}
 
 		private void BroadcastCharacterState( Character character )
@@ -302,6 +360,46 @@ namespace SampleServer
 			packet.Direction = character.CurrentDirection;
 			packet.Position = character.Position;
 			packet.Broadcast( _server );
+		}
+
+		private bool CheckBulletHit( FastBullet bullet, Vector2 oldPosition )
+		{
+			Character target = null;
+			foreach( var character in _characters.Values )
+			{
+				if( character == bullet.Shooter )
+				{
+					continue;
+				}
+
+				if( Vector2.Distance( character.Position, bullet.Position ) < character.Radius )
+				{
+					target = character;
+					break;
+				}
+
+				var t = BulletLine.Intersects( character.Position, character.Radius, oldPosition, bullet.Direction );
+				if( t != null && t.Value < FastBullet.Speed * FrameInterval )
+				{
+					target = character;
+					break;
+				}
+			}
+
+			if( target == null )
+			{
+				return false;
+			}
+
+			target.TakeDamage( FastBullet.Damage );
+
+			var packet = new HurtByFastBulletPacket();
+			packet.AttackerId = bullet.Shooter.Id;
+			packet.VictimId = target.Id;
+			packet.VictimHealth = target.CurrentHealth;
+			packet.BulletId = bullet.Id;
+			packet.Broadcast( _server );
+			return true;
 		}
 	}
 }
